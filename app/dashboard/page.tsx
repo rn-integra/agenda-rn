@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default async function Dashboard() {
   const session = await getSession();
-  if (!session?.account) redirect("/");
+  if (!session?.account) redirect("/entrar");
   if(!canUseAgenda(session))redirect(doctorHome(session));
   return <div className="rn-hub rn-agenda"><SiteHeader account={session.account} services={session.services} active="agenda"/>
     {session.account.role === "general_manager" && <SetupSteps organizationId={session.organization.id}/>}<LegacyApp /></div>;

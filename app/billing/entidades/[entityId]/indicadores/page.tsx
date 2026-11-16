@@ -11,7 +11,7 @@ export default async function EntityFinancialAnalyticsPage({params}:{
  params:Promise<{entityId:string}>
 }){
  const session=await getSession();
- if(!session)redirect("/");
+ if(!session)redirect("/entrar");
  if(session.account.role!=="general_manager")redirect("/billing");
  const {entityId}=await params;
  return <div className="rn-hub">

@@ -6,7 +6,7 @@ import '@/app/billing/billing.css';
 export const dynamic='force-dynamic';
 export default async function AppointmentFinance({searchParams}:{searchParams:Promise<{id?:string}>}) {
  const s=await getSession();
- if(!s||s.account.role==='doctor')redirect('/');
+ if(!s||s.account.role==='doctor')redirect('/entrar');
  const {id}=await searchParams;
  if(!id)return <p>Selecione um atendimento.</p>;
  return <div className="rn-hub"><BillingClient appointmentId={id}/></div>;

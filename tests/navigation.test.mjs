@@ -42,7 +42,7 @@ test('Hub sends visitors without agenda access to their permitted home, includin
  for(const [name,s,target] of [
   ['doctor finance only',session('doctor',false,true),'/billing'],
   ['doctor without services',session('doctor'),'/no-services'],
-  ['not signed in',null,'/']
+  ['not signed in',null,'/entrar']
  ]){
   const page=loadTs('app/hub/page.tsx',{'./billing-paused':{BILLING_PAUSED:false},
    '@/app/authz':{getSession:async()=>s},

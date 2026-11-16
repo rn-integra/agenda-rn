@@ -15,6 +15,6 @@ export default async function ConfirmEmailPage({ searchParams }: { searchParams:
     const result = await getSupabaseAdmin().rpc("confirm_email", { p_token_hash: hashEmailToken(token) });
     ok = !result.error;
   }
-  if (ok) return <AuthShell title="E-mail confirmado" subtitle="Sua conta está ativa. Entre com seu e-mail e senha."><Link href="/" className="inline-flex h-12 w-full items-center justify-center rounded-xl bg-[#12857f] font-semibold text-white">Entrar</Link></AuthShell>;
+  if (ok) return <AuthShell title="E-mail confirmado" subtitle="Sua conta está ativa. Entre com seu e-mail e senha."><Link href="/entrar" className="inline-flex h-12 w-full items-center justify-center rounded-xl bg-[#12857f] font-semibold text-white">Entrar</Link></AuthShell>;
   return <AuthShell title="Link inválido ou expirado" subtitle="O link de confirmação vale por 48 horas e só pode ser usado uma vez. Peça um novo abaixo."><ResendConfirmationForm /></AuthShell>;
 }

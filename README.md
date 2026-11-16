@@ -40,6 +40,8 @@ O RN Integra organiza as agendas cirúrgicas e de consultório de clínicas. Cad
 | **Médico / anestesista** (`doctor`) | Vê a própria agenda e as agendas a que tem acesso; pede marcações. |
 
 **Principais telas:**
+- **Página inicial** (`/`): apresentação do produto, com "Criar conta" e "Entrar". Quem já está logado vai direto para o app.
+- **Entrar** (`/entrar`) e **Criar conta** (`/cadastro`, que começa perguntando quem vai usar: empresa que gerencia agendas, clínica ou médico autônomo).
 - **Hub** (`/hub`): resumo do dia de todas as agendas.
 - **Agenda**: dia, semana e mês, com impressão em PDF.
 - **Área da organização**: usuários, médicos e agendas.
@@ -88,7 +90,8 @@ Os valores ficam na Vercel. **Nunca** os coloque no repositório.
 | `CRON_SECRET` | Autoriza as rotas de cron e do monitor |
 | `APP_ORIGIN` | Endereço oficial do app: base dos links nos e-mails e origem aceita nas mutações. Só em produção; o preview usa o próprio endereço |
 | `RESEND_API_KEY`, `EMAIL_FROM` | Envio de e-mails (convites, confirmação, senha, agenda dos médicos). Hoje só no Preview, com o remetente de teste `onboarding@resend.dev`, que entrega apenas no e-mail da conta do Resend. Produção depois do domínio próprio |
-| `PUBLIC_SIGNUP_ENABLED` | Libera o cadastro público de novas clínicas |
+| `PUBLIC_SIGNUP_ENABLED` | Libera o cadastro público (`/cadastro`). Sem ela, a página mostra "Cadastro em breve" |
+| `SIGNUP_SKIP_EMAIL_VERIFICATION` | **Só na fase de testes**, sem domínio de e-mail: a conta criada no cadastro já nasce com o e-mail confirmado. **Remover antes do lançamento** |
 | `ALERT_WEBHOOK_URL`, `ALERT_EMAIL` | Destino dos alertas do monitor |
 | `RN_PROFESSIONAL_BILLING_ENABLED`, `RN_DENIALS_ENABLED`, `RN_PORTAL_SUBMISSIONS_ENABLED`, `RN_MONTHLY_CLOSING_ENABLED` | Flags dos módulos de faturamento (pausados) |
 

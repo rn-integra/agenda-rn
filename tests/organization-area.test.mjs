@@ -24,7 +24,7 @@ test('login sends people with several organizations to the lobby; multi-membersh
  assert.doesNotMatch(authz.slice(authz.indexOf('activeMembershipCount')),/maybeSingle\(\)[\s\S]*export async function hasActiveMembership/);
  assert.match(login,/next: organizations > 1 \? "\/organizacoes" : "\/"/);
  const lobby=read('app/organizacoes/page.tsx');
- assert.match(lobby,/if \(!session\) redirect\("\/"\)/);
+ assert.match(lobby,/if \(!session\) redirect\("\/entrar"\)/);
  assert.match(lobby,/session\.organizations\.length < 2\) redirect\(doctorHome\(session\)\)/);
  assert.match(read('components/organization-picker.tsx'),/action: "switch", organizationId: id/);
 });
@@ -49,7 +49,8 @@ test('navigation, mobile menu, first steps and legal links',()=>{
  const mobile=read('components/mobile-navigation.tsx');
  assert.match(mobile,/<OrganizationSwitcher \/>/);
  assert.match(mobile,/href="\/termos"[\s\S]*href="\/privacidade"/);
- assert.match(read('app/page.tsx'),/href="\/termos"[\s\S]*href="\/privacidade"/);
+ assert.match(read('app/entrar/page.tsx'),/href="\/termos"[\s\S]*href="\/privacidade"/);
+ assert.match(read('components/landing-page.tsx'),/href="\/termos"[\s\S]*href="\/privacidade"/);
  assert.match(read('components/organization-area.tsx'),/href="\/termos"[\s\S]*href="\/privacidade"/);
  const dash=read('app/dashboard/page.tsx'),steps=read('components/setup-steps.tsx');
  assert.match(dash,/role === "general_manager" && <SetupSteps/);

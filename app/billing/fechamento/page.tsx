@@ -8,7 +8,7 @@ import "../billing.css";
 export const dynamic="force-dynamic";
 export default async function MonthlyClosingPage(){
  const session=await getSession();
- if(!session)redirect("/");
+ if(!session)redirect("/entrar");
  if(session.account.role!=="general_manager")redirect("/dashboard");
  if(process.env.RN_MONTHLY_CLOSING_ENABLED!=="true")redirect("/billing");
  return <div className="rn-hub">

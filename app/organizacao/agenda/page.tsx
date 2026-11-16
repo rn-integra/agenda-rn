@@ -13,7 +13,7 @@ export const metadata = { title: "Agenda do médico — RN Integra" };
 // Horário, regras e bloqueios da agenda de um médico (somente gerência).
 export default async function DoctorAgendaPage({ searchParams }: { searchParams: Promise<{ doctor_id?: string }> }) {
   const session = await getSession();
-  if (!session) redirect("/");
+  if (!session) redirect("/entrar");
   if (session.account.role !== "general_manager") redirect(doctorHome(session));
   const { doctor_id } = await searchParams;
   if (!doctor_id) redirect("/organizacao?aba=medicos");

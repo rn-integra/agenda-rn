@@ -26,3 +26,9 @@ export const LEGAL_TERMS = {
 export function publicSignupEnabled() {
   return process.env.PUBLIC_SIGNUP_ENABLED === "true";
 }
+
+// Enquanto não há domínio de e-mail (fase de testes, sem clientes): o cadastro já nasce com o e-mail confirmado.
+// DESLIGAR antes do lançamento (remover SIGNUP_SKIP_EMAIL_VERIFICATION da Vercel).
+export function signupEmailVerificationSkipped() {
+  return process.env.SIGNUP_SKIP_EMAIL_VERIFICATION === "true";
+}
