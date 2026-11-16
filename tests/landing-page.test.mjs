@@ -37,11 +37,14 @@ test('quem não está logado vai para /entrar, nunca para a página inicial', ()
   assert.match(read('app/hub/hub-logout.tsx'), /window\.location\.assign\("\/entrar"\)/);
 });
 
-test('cadastro começa perguntando quem vai usar, com os três tipos de organização', () => {
+test('cadastro em duas etapas: primeiro o perfil de uso, depois os dados', () => {
   const form = read('components/auth-forms.tsx');
-  assert.match(form, /Quem vai usar o RN Integra\?/);
+  assert.match(form, /Como você vai usar o RN Integra\?/);
   for (const kind of ['MANAGEMENT_COMPANY', 'CLINIC', 'SOLO_DOCTOR']) assert.ok(form.includes(`["${kind}",`), kind);
-  assert.ok(form.indexOf('before={') < form.indexOf('fields={[{ name: "name"'), 'a pergunta vem antes dos campos');
+  assert.match(form, /if \(step === 1\) return <form/);
+  assert.ok(form.indexOf('Etapa {step} de 2') > 0);
+  assert.match(form, /organizationKind: kind/, 'o perfil escolhido vai junto com os dados');
+  assert.doesNotMatch(read('app/cadastro/page.tsx'), /titular|gerente geral/, 'sem termos internos na tela');
 });
 
 test('cadastro sem confirmação de e-mail só com a chave ligada', () => {
