@@ -48,6 +48,8 @@ O repositório é público, então os logs do GitHub mostram **só contagens**. 
 
 ## 3. Recebi um alerta: o que fazer
 
+O caminho mais rápido é o console: **`/suporte/monitoramento`** mostra os incidentes abertos com o diagnóstico e o que fazer, e tem os botões **Rodar agora**, **Marcar como resolvido** e **Silenciar aviso** (1 h a 3 dias; se o problema piorar, avisa mesmo silenciado). Tudo fica no registro de atividades do suporte.
+
 1. **Leia “Diagnóstico” e “O que fazer”.** Se houver uma ação objetiva (configurar variável, ver painel), faça e aguarde o próximo ciclo de 15 minutos. O “✅ Resolvido” confirma.
 2. **Avalie se é incidente de segurança com dados.** É, se houver qualquer sinal de acesso indevido, vazamento, perda ou alteração de dados de uma clínica: alguém vendo agenda de outra organização, dados apagados sem ação do usuário, chave exposta, muitas falhas de login seguidas de um login bem-sucedido estranho.
    - **Se sim**, siga a seção 4: o prazo de 48 h começa agora.

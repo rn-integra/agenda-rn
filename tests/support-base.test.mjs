@@ -132,10 +132,58 @@ test('páginas e rotas do console exigem a equipe e o código confirmado', () =>
   assert.match(staff, /\.from\("platform_staff"\)[\s\S]*\.eq\("active", true\)/);
   assert.match(staff, /if \(!context\) notFound\(\);/);
   assert.match(staff, /if \(options\.mfa !== false && !context\.mfaVerified\) redirect\("\/suporte\/verificar"\);/);
-  assert.match(read('app/suporte/page.tsx'), /await requireSupportPage\(\);/);
+  assert.match(read('app/suporte/(console)/page.tsx'), /await requireSupportPage\(\);/);
   assert.match(read('app/suporte/verificar/page.tsx'), /requireSupportPage\(\{ mfa: false \}\)/);
   const setup = read('app/api/support/mfa/setup/route.ts');
   assert.match(setup, /if \(context\.mfaEnabled\) throw new HttpError\(409/);
   assert.match(setup, /\.is\("mfa_enabled_at", null\)/);
   assert.match(setup, /export const POST = secureMutation\(setup\)/);
+});
+
+test('console: moldura, visão geral e monitoramento também conferem a equipe', () => {
+  for (const page of ['layout.tsx', 'page.tsx', 'monitoramento/page.tsx']) assert.match(read(`app/suporte/(console)/${page}`), /await requireSupportPage\(\);/, page);
+  for (const route of ['run', 'incidents']) {
+    const source = read(`app/api/support/monitor/${route}/route.ts`);
+    assert.match(source, /await requireSupportApi\(\);/, route);
+    assert.match(source, /supportAudit\(context\.session\.account\.id,/, route);
+  }
+  assert.match(read('app/api/support/monitor/run/route.ts'), /consumeLimit\("support-monitor-run", String\(context\.session\.account\.id\), 3, 600/);
+  assert.match(read('app/api/support/monitor/incidents/route.ts'), /\.eq\("environment", environment\(\)\)\.is\("resolved_at", null\)/);
+});
+
+test('monitoramento: semáforo, rotinas atrasadas e gráfico de 14 dias', () => {
+  const m = loadTs('lib/support/monitor.ts', { '@/lib/supabase-admin': {}, '@/lib/monitor/report': { environment: () => 'preview' } });
+  const now = Date.parse('2026-11-19T15:00:00Z');
+  const fresh = [{ name: 'monitor', last_run_at: '2026-11-19T14:50:00Z', ok: true }];
+  assert.equal(m.overallStatus([], fresh, now).tone, 'ok');
+  assert.equal(m.overallStatus([{ severity: 'warning' }], fresh, now).tone, 'warning');
+  assert.equal(m.overallStatus([{ severity: 'error' }], fresh, now).tone, 'error');
+  assert.equal(m.overallStatus([{ severity: 'warning' }, { severity: 'critical' }], fresh, now).tone, 'critical');
+  assert.equal(m.overallStatus([], [{ name: 'monitor', last_run_at: '2026-11-19T13:00:00Z', ok: true }], now).label, 'Monitor sem rodar');
+  assert.equal(m.heartbeatLate(undefined, 'maintenance', now), true);
+  assert.equal(m.heartbeatLate({ name: 'maintenance', last_run_at: '2026-11-18T18:00:00Z', ok: true }, 'maintenance', now), false);
+  const daily = m.dailyCounts([{ first_seen: '2026-11-19T12:00:00Z' }, { first_seen: '2026-11-19T02:00:00Z' }, { first_seen: '2026-10-01T00:00:00Z' }], now);
+  assert.equal(daily.length, 14);
+  assert.equal(daily.at(-1).day, '2026-11-19');
+  assert.equal(daily.at(-1).count, 1, '02:00 UTC ainda é dia 18 em São Paulo');
+  assert.equal(daily.at(-2).count, 1);
+  assert.equal(m.playbookFor('db-network').auto, 'transient');
+});
+
+test('banco: aviso silenciado não repete, mas avisa se piorar', async () => {
+  const db = new PGlite();
+  await db.exec(`create role anon; create role authenticated; create role service_role bypassrls;
+    create schema extensions; create schema vault;`);
+  await db.exec(read('backups/schema/rn-integra-schema.sql').replace(/^create extension .*$/gm, ''));
+  await db.exec(read('supabase/migrations/20261119130000_monitor_snooze.sql'));
+  const record = async (severity) => (await db.query(`select public.record_monitor_incident('check:teste:x','production','check',$1,'Teste',null,null,null) r`, [severity])).rows[0].r;
+  assert.equal((await record('warning')).alert, true);
+  await db.query(`update public.monitor_incidents set alerted_at = now() - interval '2 days', snoozed_until = now() + interval '1 day'`);
+  assert.equal((await record('warning')).alert, false, 'silenciado: não avisa de novo');
+  assert.equal((await record('critical')).alert, true, 'piorou: avisa mesmo silenciado');
+  await db.query(`update public.monitor_incidents set alerted_at = now() - interval '2 days', snoozed_until = now() - interval '1 minute'`);
+  assert.equal((await record('critical')).alert, true, 'fim do silêncio: volta a avisar');
+  const r = await db.query(`select has_function_privilege('anon','public.record_monitor_incident(text,text,text,text,text,text,text,uuid,text,text,integer)','EXECUTE') a`);
+  assert.equal(r.rows[0].a, false);
+  await db.close();
 });
