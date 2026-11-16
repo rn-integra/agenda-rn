@@ -187,3 +187,68 @@ test('banco: aviso silenciado não repete, mas avisa se piorar', async () => {
   assert.equal(r.rows[0].a, false);
   await db.close();
 });
+
+function userActionApi({ member = { id: 9, name: 'Ana', email: 'Ana@Clinica.test', active: true }, staffId = 7, email = true } = {}) {
+  const calls = [];
+  const cache = new Map();
+  const env = { ...process.env };
+  if (email) { process.env.RESEND_API_KEY = 'x'; process.env.EMAIL_FROM = 'y'; } else { delete process.env.RESEND_API_KEY; delete process.env.EMAIL_FROM; }
+  const api = loadTs('app/api/support/organizations/users/route.ts', {
+    '@/lib/support/staff': { requireSupportApi: async () => ({ session: { account: { id: staffId } } }) },
+    '@/lib/support/audit': { supportAudit: async (id, action, details) => { calls.push(['audit', action, details.organizationId]); } },
+    '@/lib/support/organizations': { membershipInOrganization: async () => member },
+    '@/lib/security/rate-limit': {
+      LOGIN_FAILURE_LIMITS: [{ scope: 'login-account' }, { scope: 'login-account-day' }],
+      clearLimit: async (scope, id) => { calls.push(['clear', scope, id]); }, consumeLimit: async (scope) => { calls.push(['consume', scope]); },
+    },
+    '@/lib/email': { appOrigin: () => 'https://x.test', emailConfigured: () => email, newEmailToken: () => ({ token: 't', hash: 'h' }),
+      emails: { reset: (to) => ({ to }) }, sendMail: async (mail) => { calls.push(['mail', mail.to]); } },
+    '@/lib/supabase-admin': { dbError() {}, getSupabaseAdmin: () => ({
+      from: () => ({ delete() { calls.push(['delete']); return this; }, eq() { return this; }, select: async () => ({ data: [{ id: 1 }, { id: 2 }], error: null }) }),
+      rpc: async (fn) => { calls.push(['rpc', fn]); return { data: { email: 'ana@clinica.test' }, error: null }; } }) },
+  }, cache);
+  process.env = env;
+  const post = (body) => api.POST(new Request('https://example.com/api/support/organizations/users', { method: 'POST',
+    headers: { origin: 'https://example.com', 'content-type': 'application/json' }, body: JSON.stringify(body) }));
+  return { calls, post };
+}
+
+const ORG = '00000000-0000-4000-8000-0000000000a1';
+
+test('organizações: desbloquear zera os limites de login pelo e-mail e fica registrado', async () => {
+  const unlock = userActionApi();
+  assert.equal((await unlock.post({ organizationId: ORG, userId: 9, action: 'unlock' })).status, 200);
+  assert.deepEqual(unlock.calls.filter((c) => c[0] === 'clear').map((c) => c.slice(1)), [['login-account', 'ana@clinica.test'], ['login-account-day', 'ana@clinica.test']]);
+  assert.deepEqual(unlock.calls.filter((c) => c[0] === 'audit'), [['audit', 'user_unlock', ORG]]);
+
+  assert.equal((await userActionApi({ member: null }).post({ organizationId: ORG, userId: 9, action: 'unlock' })).status, 404, 'pessoa de outra organização');
+  assert.equal((await userActionApi().post({ organizationId: ORG, userId: 9, action: 'set_password' })).status, 400, 'não existe ação de definir senha');
+});
+
+test('organizações: encerrar sessões e link de nova senha', async () => {
+  const end = userActionApi();
+  const response = await end.post({ organizationId: ORG, userId: 9, action: 'end_sessions' });
+  assert.equal(response.status, 200);
+  assert.match((await response.json()).message, /^2 sessão/);
+  assert.equal((await userActionApi({ staffId: 9 }).post({ organizationId: ORG, userId: 9, action: 'end_sessions' })).status, 400, 'a própria sessão é pelo Sair');
+
+  const reset = userActionApi();
+  assert.equal((await reset.post({ organizationId: ORG, userId: 9, action: 'reset_link' })).status, 200);
+  assert.ok(reset.calls.some((c) => c[0] === 'rpc' && c[1] === 'request_password_reset'));
+  assert.deepEqual(reset.calls.filter((c) => c[0] === 'mail').map((c) => c[1]), ['Ana@Clinica.test'], 'o link vai para o e-mail da pessoa, nunca para o suporte');
+  const noEmail = userActionApi({ email: false });
+  assert.equal((await noEmail.post({ organizationId: ORG, userId: 9, action: 'reset_link' })).status, 409, 'sem e-mail configurado não gera link');
+  assert.ok(!noEmail.calls.some((c) => c[0] === 'rpc'), 'nem gera link nem vira incidente');
+});
+
+test('organizações: páginas exigem a equipe, a ficha fica registrada e nada de pacientes', () => {
+  const list = read('app/suporte/(console)/organizacoes/page.tsx'), detail = read('app/suporte/(console)/organizacoes/[id]/page.tsx');
+  assert.match(list, /await requireSupportPage\(\);/);
+  assert.match(detail, /await requireSupportPage\(\);/);
+  assert.match(detail, /supportAudit\(session\.account\.id, "organization_view"/);
+  const data = read('lib/support/organizations.ts');
+  for (const table of ['patients', 'appointments', 'app_state', 'financial']) assert.ok(!data.includes(`from("${table}`), table);
+  const { matchesSearch } = loadTs('lib/support/organizations.ts', { '@/lib/supabase-admin': {}, '@/lib/security/rate-limit': {} });
+  assert.equal(matchesSearch('Clínica São José', 'sao jose'), true);
+  assert.equal(matchesSearch('Clínica São José', 'outra'), false);
+});

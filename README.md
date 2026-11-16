@@ -46,7 +46,7 @@ O RN Integra organiza as agendas cirúrgicas e de consultório de clínicas. Cad
 - **Agenda**: dia, semana e mês, com impressão em PDF.
 - **Área da organização**: usuários, médicos e agendas.
 - **Faturamento**: implementado, mas **pausado** por flags até ser retomado.
-- **Suporte** (`/suporte`): console da equipe RN Integra, acima das organizações. Só abre para quem está em `public.platform_staff` e depois do código do autenticador (2FA). Tem visão geral (situação do sistema, equipe e registro de atividades) e **Monitoramento** (semáforo, rotinas, incidentes abertos com diagnóstico e o que fazer, gráfico de 14 dias, corrigidos sozinhos; botões para rodar o monitor, resolver e silenciar o aviso de um incidente). Organizações e chamados vêm a seguir.
+- **Suporte** (`/suporte`): console da equipe RN Integra, acima das organizações. Só abre para quem está em `public.platform_staff` e depois do código do autenticador (2FA). Tem visão geral (situação do sistema, equipe e registro de atividades) e **Monitoramento** (semáforo, rotinas, incidentes abertos com diagnóstico e o que fazer, gráfico de 14 dias, corrigidos sozinhos; botões para rodar o monitor, resolver e silenciar o aviso de um incidente). **Organizações** (busca; ficha com equipe, convites pendentes, acessos recentes e logins bloqueados; ações de desbloquear login, encerrar sessões e enviar link de nova senha para o e-mail da pessoa). Abrir a ficha e cada ação ficam no registro. O suporte não vê pacientes, agenda nem faturamento. Chamados vêm a seguir.
 
 ## Stack
 

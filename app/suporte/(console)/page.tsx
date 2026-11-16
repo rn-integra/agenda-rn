@@ -14,6 +14,10 @@ const ACTIONS: Record<string, string> = {
   incident_resolve: "marcou um incidente como resolvido",
   incident_snooze: "silenciou o aviso de um incidente",
   incident_unsnooze: "reativou o aviso de um incidente",
+  organization_view: "abriu a ficha de uma organização",
+  user_unlock: "desbloqueou o login de uma pessoa",
+  user_end_sessions: "encerrou as sessões de uma pessoa",
+  user_reset_link: "enviou um link de nova senha",
 };
 
 const daysAgo = (days: number) => new Date(Date.now() - days * 86_400_000).toISOString();

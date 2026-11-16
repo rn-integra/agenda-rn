@@ -33,3 +33,11 @@ export async function clearLimit(scope: string, identity: string) {
   const {error} = await getSupabaseAdmin().rpc('clear_security_limit',{p_key:limitKey(scope, identity)});
   if (error) console.error('[rate-limit] clear', scope, error.message);
 }
+
+// Situação de um contador (para o console do suporte saber se uma conta está bloqueada).
+export async function limitStatus(scope: string, identity: string, limit: number) {
+  const {data,error} = await getSupabaseAdmin().from('security_rate_limits').select('hits,expires_at')
+    .eq('key',limitKey(scope, identity)).gt('expires_at',new Date().toISOString()).maybeSingle();
+  if (error) throw new HttpError(503, 'Não foi possível ler os bloqueios.');
+  return { hits: Number(data?.hits ?? 0), blocked: Number(data?.hits ?? 0) >= limit, until: (data?.expires_at as string | undefined) ?? null };
+}
