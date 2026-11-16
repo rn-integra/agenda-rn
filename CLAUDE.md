@@ -22,6 +22,7 @@ Sistema de agendas médicas multiorganização (clínicas). Papéis: `general_ma
   - gerência e secretária: lembretes de confirmação, guias, conflitos de horário e sugestões paradas (secretária só nas agendas liberadas);
   - médico: **sem pendências**, só a agenda de hoje dele e das agendas a que tem acesso;
   - sem CPF nem dados financeiros.
+- **Suporte RN Integra:** console em `/suporte`, da equipe da plataforma (não das clínicas). Equipe em `public.platform_staff` (só por SQL), 2FA TOTP obrigatório (`lib/support/`), ações em `public.support_audit` (só acrescenta). Fases: 1 base (feita), 2 monitoramento, 3 organizações, 4 chamados, 5 acesso assistido com autorização do gerente. Por padrão, o suporte não vê dados de pacientes.
 - **Textos jurídicos:** `lib/legal.ts`, com dados do fornecedor ainda por preencher e o prazo de 48 h para avisar a clínica em caso de incidente.
 
 ## Como trabalhar aqui

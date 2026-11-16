@@ -91,6 +91,17 @@ select * from public.monitor_heartbeats;
 
 -- Encerrar manualmente um incidente já tratado
 update public.monitor_incidents set resolved_at = now() where id = <id>;
+
+-- Equipe de suporte: incluir uma conta (ela configura o autenticador no primeiro acesso a /suporte)
+insert into public.platform_staff(user_id, note) values (<id do usuário>, 'motivo');
+-- Tirar alguém da equipe (o acesso some na hora)
+update public.platform_staff set active = false where user_id = <id>;
+-- Perdeu o celular ou a chave SUPABASE_SECRET_KEY foi trocada: zerar o 2FA para configurar de novo
+update public.platform_staff set mfa_secret_enc = null, mfa_enabled_at = null, mfa_last_step = null where user_id = <id>;
+
+-- O que o suporte fez nos últimos 7 dias
+select created_at, staff_user_id, action, organization_id, target from public.support_audit
+where created_at > now() - interval '7 days' order by created_at desc;
 ```
 
 ## 6. Como ensinar algo novo ao assistente

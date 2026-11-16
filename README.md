@@ -41,11 +41,12 @@ O RN Integra organiza as agendas cirúrgicas e de consultório de clínicas. Cad
 
 **Principais telas:**
 - **Página inicial** (`/`): apresentação do produto, com "Criar conta" e "Entrar". Quem já está logado vai direto para o app.
-- **Entrar** (`/entrar`) e **Criar conta** (`/cadastro`, que começa perguntando quem vai usar: empresa que gerencia agendas, clínica ou médico autônomo).
+- **Entrar** (`/entrar`) e **Criar conta** (`/cadastro`, em duas etapas: primeiro o perfil — empresa de gestão de agendas, clínica ou médico autônomo — e depois os dados da conta).
 - **Hub** (`/hub`): resumo do dia de todas as agendas.
 - **Agenda**: dia, semana e mês, com impressão em PDF.
 - **Área da organização**: usuários, médicos e agendas.
 - **Faturamento**: implementado, mas **pausado** por flags até ser retomado.
+- **Suporte** (`/suporte`): console da equipe RN Integra, acima das organizações. Só abre para quem está em `public.platform_staff` e depois do código do autenticador (2FA). Fase 1: equipe e registro de atividades; monitoramento, organizações e chamados vêm a seguir.
 
 ## Stack
 
@@ -145,6 +146,7 @@ A `main` é protegida: só recebe mudanças por PR com a CI verde (`test`, `lint
 - **Sessões:** duram 8 horas, são revogadas quando a senha muda e o token tem formato rígido (`app/authz.ts`).
 - **Senha errada:** os limites ficam no banco (`lib/security/rate-limit.ts`) e contam só as falhas: 10 erros em 15 minutos fazem a conta esperar, e 20 em 24 horas a bloqueiam por até 24 horas. Redefinir a senha pelo e-mail libera na hora. Por IP, 30 tentativas a cada 5 minutos.
 - **Senhas novas:** de 12 a 128 caracteres, recusando senhas comuns, sequências e o próprio e-mail (`lib/security/password-policy.ts`). Guardadas com PBKDF2 em 600 mil rodadas.
+- **Suporte:** a equipe é uma lista fechada no banco (`public.platform_staff`), alterada só por SQL; para os demais, `/suporte` responde "não encontrado". Exige 2FA por app autenticador (TOTP) a cada login e a cada 12 horas, com 5 tentativas a cada 15 minutos e sem reuso de código. O segredo do autenticador fica cifrado (AES-GCM). Toda ação vai para `public.support_audit`, que nem o servidor consegue alterar ou apagar.
 - **Permissões:** vêm do banco a cada requisição. A secretária só vê as agendas liberadas; o médico, só as dele e as compartilhadas.
 - **LGPD:** há exportação e anonimização de pacientes. Os textos jurídicos ficam em `lib/legal.ts`.
 - **Banco:** RLS ligado em todas as tabelas e nenhuma permissão para `anon`/`authenticated`: o navegador nunca fala com o banco. As funções têm `search_path` vazio e só o servidor (`service_role`) as executa, inclusive as criadas no futuro. A CI confere tudo isso restaurando o esqueleto do banco (`tests/schema-backup.test.mjs`).
