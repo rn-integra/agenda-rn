@@ -39,7 +39,8 @@ test('quem não está logado vai para /entrar, nunca para a página inicial', ()
 
 test('cadastro em duas etapas: primeiro o perfil de uso, depois os dados', () => {
   const form = read('components/auth-forms.tsx');
-  assert.match(form, /Como você vai usar o RN Integra\?/);
+  assert.match(form, /Selecione o perfil da sua operação/);
+  assert.match(form, /fields=\{\[\{ name: "organizationName"/, 'o nome da organização vem primeiro');
   for (const kind of ['MANAGEMENT_COMPANY', 'CLINIC', 'SOLO_DOCTOR']) assert.ok(form.includes(`["${kind}",`), kind);
   assert.match(form, /if \(step === 1\) return <form/);
   assert.ok(form.indexOf('Etapa {step} de 2') > 0);
