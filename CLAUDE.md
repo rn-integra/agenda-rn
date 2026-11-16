@@ -56,7 +56,8 @@ Sistema de agendas médicas multiorganização (clínicas). Papéis: `general_ma
   - domínio para o Resend: a conta existe e `RESEND_API_KEY` e `EMAIL_FROM` estão **só no Preview**, com o remetente de teste `onboarding@resend.dev` (entrega só no e-mail da conta do Resend); com o domínio, configurar produção (`RESEND_API_KEY`, `EMAIL_FROM`, `APP_ORIGIN`, depois `PUBLIC_SIGNUP_ENABLED`);
   - planos Vercel Pro e Supabase Pro;
   - configurar o monitor (`MONITOR_URL` e `CRON_SECRET` no GitHub; `ALERT_WEBHOOK_URL` ou `ALERT_EMAIL` na Vercel);
-  - zerar banco e Storage antes de abrir.
+  - zerar banco e Storage antes de abrir;
+  - antes de abrir, **remover `SIGNUP_SKIP_EMAIL_VERIFICATION`** da Vercel (hoje o cadastro está ligado em produção e preview sem confirmação de e-mail, para testes).
 - **Técnico:**
   - teste de restauração dos **dados** (a estrutura já é restaurada e conferida na CI por `tests/schema-backup.test.mjs`);
   - e-mail da agenda para médicos e anestesistas (depende do Resend): agenda de amanhã às 20h do dia anterior e prévia da semana seguinte às 20h de sexta; secretárias e gerência não recebem;

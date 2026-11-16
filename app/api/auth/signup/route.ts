@@ -6,7 +6,7 @@ import { consumeLimit } from "@/lib/security/rate-limit";
 import { clientIp } from "@/lib/security/client";
 import { passwordProblem } from "@/lib/security/password-policy";
 import { appOrigin, emails, newEmailToken, requireEmailDelivery, sendMail } from "@/lib/email";
-import { TERMS_VERSION, publicSignupEnabled } from "@/lib/legal";
+import { TERMS_VERSION, publicSignupEnabled, signupEmailVerificationSkipped } from "@/lib/legal";
 
 const body = z.object({
   name: z.string().trim().min(2).max(120),
@@ -22,7 +22,8 @@ const done = () => Response.json({ ok: true, message: "Enviamos um e-mail para c
 
 async function signup(request: Request) {
   if (!publicSignupEnabled()) throw new HttpError(404, "Cadastro indisponível.");
-  requireEmailDelivery();
+  const skipVerification = signupEmailVerificationSkipped();
+  if (!skipVerification) requireEmailDelivery();
   await consumeLimit("signup-ip", clientIp(request), 5, 3600);
   const parsed = body.safeParse(await readJson(request, 4096));
   if (!parsed.success) throw new HttpError(400, "Confira os dados. A senha precisa ter de 12 a 128 caracteres e os termos precisam ser aceitos.");
@@ -38,6 +39,12 @@ async function signup(request: Request) {
   if (result.error) {
     if (String(result.error.message).includes("Já existe uma conta")) { await sendMail(emails.alreadyRegistered(data.email, `${origin}/entrar`)); return done(); }
     throw new HttpError(result.error.code === "P0001" ? 400 : 500, result.error.code === "P0001" ? result.error.message : "Não foi possível concluir o cadastro.");
+  }
+  if (skipVerification) {
+    // Preview sem domínio de e-mail: confirma na hora com o mesmo link de uso único.
+    const confirmed = await getSupabaseAdmin().rpc("confirm_email", { p_token_hash: hash });
+    if (confirmed.error) throw new HttpError(500, "Não foi possível concluir o cadastro.");
+    return Response.json({ ok: true, message: "Conta criada. Entre com seu e-mail e senha." });
   }
   await sendMail(emails.confirm(data.email, data.name, `${origin}/confirmar-email?token=${token}`));
   return done();

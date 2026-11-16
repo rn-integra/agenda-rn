@@ -90,7 +90,8 @@ Os valores ficam na Vercel. **Nunca** os coloque no repositório.
 | `CRON_SECRET` | Autoriza as rotas de cron e do monitor |
 | `APP_ORIGIN` | Endereço oficial do app: base dos links nos e-mails e origem aceita nas mutações. Só em produção; o preview usa o próprio endereço |
 | `RESEND_API_KEY`, `EMAIL_FROM` | Envio de e-mails (convites, confirmação, senha, agenda dos médicos). Hoje só no Preview, com o remetente de teste `onboarding@resend.dev`, que entrega apenas no e-mail da conta do Resend. Produção depois do domínio próprio |
-| `PUBLIC_SIGNUP_ENABLED` | Libera o cadastro público (`/cadastro`). Sem ela, a página mostra "Cadastro em breve". Ligar só depois do e-mail em produção, porque a conta nova precisa confirmar o e-mail |
+| `PUBLIC_SIGNUP_ENABLED` | Libera o cadastro público (`/cadastro`). Sem ela, a página mostra "Cadastro em breve" |
+| `SIGNUP_SKIP_EMAIL_VERIFICATION` | **Só na fase de testes**, sem domínio de e-mail: a conta criada no cadastro já nasce com o e-mail confirmado. **Remover antes do lançamento** |
 | `ALERT_WEBHOOK_URL`, `ALERT_EMAIL` | Destino dos alertas do monitor |
 | `RN_PROFESSIONAL_BILLING_ENABLED`, `RN_DENIALS_ENABLED`, `RN_PORTAL_SUBMISSIONS_ENABLED`, `RN_MONTHLY_CLOSING_ENABLED` | Flags dos módulos de faturamento (pausados) |
 

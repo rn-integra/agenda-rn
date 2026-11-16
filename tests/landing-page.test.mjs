@@ -43,3 +43,17 @@ test('cadastro começa perguntando quem vai usar, com os três tipos de organiza
   for (const kind of ['MANAGEMENT_COMPANY', 'CLINIC', 'SOLO_DOCTOR']) assert.ok(form.includes(`["${kind}",`), kind);
   assert.ok(form.indexOf('before={') < form.indexOf('fields={[{ name: "name"'), 'a pergunta vem antes dos campos');
 });
+
+test('cadastro sem confirmação de e-mail só com a chave ligada', () => {
+  const { signupEmailVerificationSkipped } = loadTs('lib/legal.ts');
+  const env = { ...process.env };
+  try {
+    process.env.SIGNUP_SKIP_EMAIL_VERIFICATION = 'true';
+    assert.equal(signupEmailVerificationSkipped(), true);
+    delete process.env.SIGNUP_SKIP_EMAIL_VERIFICATION;
+    assert.equal(signupEmailVerificationSkipped(), false, 'desligado por padrão');
+  } finally { process.env = env; }
+  const route = read('app/api/auth/signup/route.ts');
+  assert.match(route, /if \(!skipVerification\) requireEmailDelivery\(\);/);
+  assert.match(route, /if \(skipVerification\) \{[\s\S]*rpc\("confirm_email", \{ p_token_hash: hash \}\)/);
+});
