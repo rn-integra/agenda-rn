@@ -8,8 +8,8 @@ import { Label } from "@/components/ui/label";
 type Field = { name: string; label: string; type?: string; autoComplete?: string; minLength?: number; maxLength?: number; placeholder?: string; defaultValue?: string; required?: boolean };
 
 // Formulário genérico das páginas de conta: envia JSON e mostra a mensagem do servidor.
-function AuthForm({ endpoint, fields, submit, extra, build, after }: {
-  endpoint: string; fields: Field[]; submit: string; extra?: React.ReactNode;
+function AuthForm({ endpoint, fields, submit, before, extra, build, after }: {
+  endpoint: string; fields: Field[]; submit: string; before?: React.ReactNode; extra?: React.ReactNode;
   build?: (data: FormData) => Record<string, unknown>; after?: (result: Record<string, unknown>) => void;
 }) {
   const [message, setMessage] = useState(""), [error, setError] = useState(""), [busy, setBusy] = useState(false), [done, setDone] = useState(false);
@@ -25,8 +25,9 @@ function AuthForm({ endpoint, fields, submit, extra, build, after }: {
     } catch { setError("Não foi possível conectar. Verifique sua internet e tente novamente."); }
     finally { setBusy(false); }
   }
-  if (done) return <p role="status" className="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{message} <Link className="ml-1 font-medium underline" href="/">Ir para o login</Link></p>;
+  if (done) return <p role="status" className="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{message} <Link className="ml-1 font-medium underline" href="/entrar">Ir para o login</Link></p>;
   return <form onSubmit={onSubmit} className="space-y-4">
+    {before}
     {fields.map(f => <div key={f.name} className="space-y-2">
       <Label htmlFor={f.name} className="text-slate-700">{f.label}</Label>
       <Input id={f.name} name={f.name} type={f.type || "text"} autoComplete={f.autoComplete} minLength={f.minLength} maxLength={f.maxLength}
@@ -40,16 +41,28 @@ function AuthForm({ endpoint, fields, submit, extra, build, after }: {
 
 const password = (label = "Senha"): Field => ({ name: "password", label, type: "password", autoComplete: "new-password", minLength: 12, maxLength: 128, placeholder: "Mínimo de 12 caracteres" });
 
+// "Quem vai usar?": define o tipo da organização criada no cadastro.
+const SIGNUP_KINDS = [
+  ["MANAGEMENT_COMPANY", "Empresa que gerencia agendas", "Assessoria ou secretariado que cuida da agenda de vários médicos."],
+  ["CLINIC", "Clínica", "Recepção trabalhando nas agendas dos médicos da casa."],
+  ["SOLO_DOCTOR", "Médico autônomo", "A sua própria agenda, com espaço para uma secretária depois."],
+] as const;
+
 export function SignupForm() {
   return <AuthForm endpoint="/api/auth/signup" submit="Criar conta"
+    before={<>
+      <fieldset className="space-y-2">
+        <legend className="mb-2 text-sm font-medium text-slate-700">Quem vai usar o RN Integra?</legend>
+        {SIGNUP_KINDS.map(([value, title, text], index) => <label key={value} className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-3 text-sm has-[:checked]:border-[#12857f] has-[:checked]:bg-[#eaf3f1]">
+          <input type="radio" name="organizationKind" value={value} defaultChecked={index === 0} required className="mt-1 accent-[#12857f]" />
+          <span><span className="block font-semibold text-slate-800">{title}</span><span className="block text-slate-600">{text}</span></span>
+        </label>)}
+      </fieldset>
+    </>}
     fields={[{ name: "name", label: "Seu nome", autoComplete: "name", minLength: 2, maxLength: 120 },
       { name: "email", label: "E-mail", type: "email", autoComplete: "email", maxLength: 254 }, password(),
       { name: "organizationName", label: "Nome da empresa, clínica ou consultório", minLength: 2, maxLength: 120 }]}
     extra={<>
-      <div className="space-y-2"><Label htmlFor="organizationKind" className="text-slate-700">Tipo</Label>
-        <select id="organizationKind" name="organizationKind" defaultValue="MANAGEMENT_COMPANY" className="h-12 w-full rounded-md border border-slate-200 bg-slate-50/70 px-3 text-sm">
-          <option value="MANAGEMENT_COMPANY">Empresa de gestão de agendas</option><option value="CLINIC">Clínica</option><option value="SOLO_DOCTOR">Médico autônomo</option>
-        </select></div>
       <label className="flex items-start gap-2 text-sm text-slate-600"><input type="checkbox" name="acceptTerms" required className="mt-1" />
         <span>Li e aceito, em nome da organização, os <a href="/termos" target="_blank" className="underline">termos de uso</a>, a <a href="/privacidade" target="_blank" className="underline">política de privacidade</a> e o <a href="/contrato-operador" target="_blank" className="underline">contrato de tratamento de dados</a>.</span></label>
     </>}

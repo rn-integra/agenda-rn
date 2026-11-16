@@ -8,7 +8,7 @@ import "../billing.css";
 export const dynamic="force-dynamic";
 export default async function GlosasPage(){
  const session=await getSession();
- if(!session)redirect("/");
+ if(!session)redirect("/entrar");
  if(!["general_manager","secretary"].includes(session.account.role))redirect("/dashboard");
  if(process.env.RN_DENIALS_ENABLED!=="true")
    redirect(session.account.role==="general_manager"?"/billing?view=insurance":"/dashboard");

@@ -12,7 +12,7 @@ const TABS: OrganizationTab[] = ["medicos", "equipe", "dados"];
 // Configurações da organização ativa (engrenagem do menu): médicos, equipe e dados (somente gerência).
 export default async function OrganizationPage({ searchParams }: { searchParams: Promise<{ aba?: string }> }) {
   const session = await getSession();
-  if (!session) redirect("/");
+  if (!session) redirect("/entrar");
   if (session.account.role !== "general_manager") redirect(doctorHome(session));
   const { aba } = await searchParams;
   const initialTab = TABS.find(t => t === aba) || "medicos";

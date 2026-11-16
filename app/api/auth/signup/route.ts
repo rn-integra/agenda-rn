@@ -36,7 +36,7 @@ async function signup(request: Request) {
     p_org_name: data.organizationName, p_org_kind: data.organizationKind, p_terms_version: TERMS_VERSION, p_token_hash: hash,
   });
   if (result.error) {
-    if (String(result.error.message).includes("Já existe uma conta")) { await sendMail(emails.alreadyRegistered(data.email, `${origin}/`)); return done(); }
+    if (String(result.error.message).includes("Já existe uma conta")) { await sendMail(emails.alreadyRegistered(data.email, `${origin}/entrar`)); return done(); }
     throw new HttpError(result.error.code === "P0001" ? 400 : 500, result.error.code === "P0001" ? result.error.message : "Não foi possível concluir o cadastro.");
   }
   await sendMail(emails.confirm(data.email, data.name, `${origin}/confirmar-email?token=${token}`));

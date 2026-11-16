@@ -87,7 +87,7 @@ function AgendaCard({ agenda, today, now }: { agenda: HubAgenda; today: string; 
 // o médico vê só a agenda do dia, sem pendências.
 export default async function HubPage({ searchParams }: { searchParams: Promise<{ filtro?: string }> }) {
   const session = await getSession();
-  if (!session?.account) redirect("/");
+  if (!session?.account) redirect("/entrar");
   if (!canUseAgenda(session)) redirect(doctorHome(session));
   const params = await searchParams;
   const now = new Date(), today = localDate(now);
