@@ -61,4 +61,5 @@ Sistema de agendas médicas multiorganização (clínicas). Papéis: `general_ma
 - **Técnico:**
   - teste de restauração dos **dados** (a estrutura já é restaurada e conferida na CI por `tests/schema-backup.test.mjs`);
   - e-mail da agenda para médicos e anestesistas (depende do Resend): agenda de amanhã às 20h do dia anterior e prévia da semana seguinte às 20h de sexta; secretárias e gerência não recebem;
+  - **antes do lançamento:** tela de escolha de plano no cadastro (hoje a conta é criada direto depois dos dados); definir os planos e onde a escolha entra no fluxo;
   - depois: faturamento M2c e remoção de `app_state` (A2).

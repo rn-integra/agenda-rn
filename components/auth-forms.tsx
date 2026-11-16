@@ -49,7 +49,7 @@ const SIGNUP_KINDS = [
 type SignupKind = typeof SIGNUP_KINDS[number][0];
 
 function StepLabel({ step }: { step: 1 | 2 }) {
-  return <div className="mb-4 flex items-center gap-3 text-xs font-medium uppercase tracking-wide text-slate-500">
+  return <div className="flex items-center gap-3 pt-1 text-xs font-medium uppercase tracking-wide text-slate-500">
     <span>Etapa {step} de 2</span>
     <span className="flex flex-1 gap-1.5" aria-hidden="true">
       <span className="h-1 flex-1 rounded-full bg-[#12857f]" />
@@ -62,7 +62,6 @@ export function SignupForm() {
   const [kind, setKind] = useState<SignupKind>("MANAGEMENT_COMPANY"), [step, setStep] = useState<1 | 2>(1), [finished, setFinished] = useState(false);
   const chosen = SIGNUP_KINDS.find(k => k[0] === kind)!;
   if (step === 1) return <form className="space-y-4" onSubmit={event => { event.preventDefault(); setStep(2); }}>
-    <StepLabel step={1} />
     <fieldset className="space-y-2">
       <legend className="mb-3 text-base font-semibold text-slate-800">Como você vai usar o RN Integra?</legend>
       {SIGNUP_KINDS.map(([value, title, text]) => <label key={value} className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4 text-sm transition-colors hover:border-[#12857f]/60 has-[:checked]:border-[#12857f] has-[:checked]:bg-[#eaf3f1]">
@@ -70,10 +69,10 @@ export function SignupForm() {
         <span><span className="block font-semibold text-slate-800">{title}</span><span className="mt-0.5 block leading-5 text-slate-600">{text}</span></span>
       </label>)}
     </fieldset>
+    <StepLabel step={1} />
     <Button type="submit" className="h-12 w-full rounded-xl bg-[#12857f] text-base font-semibold hover:bg-[#0f716c]">Continuar</Button>
   </form>;
   return <>
-    {!finished && <StepLabel step={2} />}
     {!finished && <div className="mb-5 flex items-center justify-between gap-3 rounded-xl border border-[#12857f]/30 bg-[#eaf3f1] px-4 py-3 text-sm">
       <span><span className="block text-xs text-slate-500">Perfil escolhido</span><span className="font-semibold text-slate-800">{chosen[1]}</span></span>
       <button type="button" onClick={() => setStep(1)} className="font-medium text-[#12857f] underline">Alterar</button>
@@ -85,6 +84,7 @@ export function SignupForm() {
       extra={<>
         <label className="flex cursor-pointer items-start gap-3 text-sm leading-5 text-slate-600"><span className="relative mt-0.5 grid size-5 shrink-0 place-items-center"><input type="checkbox" name="acceptTerms" required className="peer size-5 cursor-pointer appearance-none rounded-[5px] border border-slate-300 bg-white transition-colors checked:border-[#12857f] checked:bg-[#12857f] focus-visible:ring-[3px] focus-visible:ring-[#12857f]/30" /><svg viewBox="0 0 16 16" aria-hidden="true" className="pointer-events-none absolute size-3.5 text-white opacity-0 peer-checked:opacity-100"><path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
           <span>Li e aceito os <a href="/termos" target="_blank" className="underline">termos de uso</a>, a <a href="/privacidade" target="_blank" className="underline">política de privacidade</a> e o <a href="/contrato-operador" target="_blank" className="underline">contrato de tratamento de dados</a>.</span></label>
+        <StepLabel step={2} />
       </>}
       build={d => ({ name: d.get("name"), email: d.get("email"), password: d.get("password"), organizationName: d.get("organizationName"), organizationKind: kind, acceptTerms: d.get("acceptTerms") === "on" })} />
   </>;
