@@ -13,6 +13,7 @@ export const metadata = { title: "Organização — Suporte RN Integra", robots:
 const EVENT_LABEL: Record<string, string> = {
   login_success: "Entrou", login_failure: "Errou a senha", login_unverified: "Tentou entrar sem confirmar o e-mail",
   password_reset: "Redefiniu a senha", invite_accepted: "Aceitou um convite", organization_switch: "Trocou de organização",
+  patient_export: "Exportou os dados de um paciente (LGPD)", patient_anonymized: "Anonimizou um paciente (LGPD)",
 };
 
 // Ficha de uma organização para o suporte: cadastro, equipe, convites e acessos recentes.
@@ -73,7 +74,7 @@ export default async function OrganizationPage({ params }: { params: Promise<{ i
             <p className="text-xs text-slate-500">{ROLE_LABEL[invite.role] || invite.role} · enviado {ago(invite.created_at)} · vence {dateTime.format(new Date(invite.expires_at))}</p>
           </li>)}</ul>}
       </Card>
-      <Card title="Acessos recentes" text="Entradas, senhas erradas e redefinições nesta organização.">
+      <Card title="Acessos e eventos de segurança" text="Entradas, senhas erradas, redefinições e pedidos LGPD (sem dados do paciente).">
         {events.length === 0 ? <Empty>Nenhum acesso registrado.</Empty> :
           <ul className="divide-y divide-slate-100">{events.map(event => <li key={event.id} className="flex items-baseline justify-between gap-3 py-2.5 text-sm first:pt-0 last:pb-0">
             <span><span className="font-medium text-slate-800">{event.actor || "Alguém"}</span> <span className="text-slate-600">{(EVENT_LABEL[event.kind] || event.kind).toLowerCase()}</span></span>
