@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/password-input";
 
 type Field = { name: string; label: string; type?: string; autoComplete?: string; minLength?: number; maxLength?: number; placeholder?: string; defaultValue?: string; required?: boolean };
 
@@ -29,8 +30,11 @@ function AuthForm({ endpoint, fields, submit, extra, build, after, compact }: {
   return <form onSubmit={onSubmit} className={compact ? "space-y-3" : "space-y-4"}>
     {fields.map(f => <div key={f.name} className={compact ? "space-y-1.5" : "space-y-2"}>
       <Label htmlFor={f.name} className="text-slate-700">{f.label}</Label>
-      <Input id={f.name} name={f.name} type={f.type || "text"} autoComplete={f.autoComplete} minLength={f.minLength} maxLength={f.maxLength}
-        placeholder={f.placeholder} defaultValue={f.defaultValue} required={f.required !== false} className={`border-slate-200 bg-slate-50/70 ${compact ? "h-10" : "h-12"}`} />
+      {(() => {
+        const props = { id: f.name, name: f.name, autoComplete: f.autoComplete, minLength: f.minLength, maxLength: f.maxLength, placeholder: f.placeholder,
+          defaultValue: f.defaultValue, required: f.required !== false, className: `border-slate-200 bg-slate-50/70 ${compact ? "h-10" : "h-12"}` };
+        return f.type === "password" ? <PasswordInput {...props} /> : <Input {...props} type={f.type || "text"} />;
+      })()}
     </div>)}
     {extra}
     {error && <p role="alert" className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}

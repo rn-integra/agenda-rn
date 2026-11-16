@@ -61,3 +61,11 @@ test('cadastro sem confirmação de e-mail só com a chave ligada', () => {
   assert.match(route, /if \(!skipVerification\) requireEmailDelivery\(\);/);
   assert.match(route, /if \(skipVerification\) \{[\s\S]*rpc\("confirm_email", \{ p_token_hash: hash \}\)/);
 });
+
+test('campos de senha têm botão de mostrar/ocultar, sem "repetir senha"', () => {
+  const input = read('components/password-input.tsx');
+  assert.match(input, /type=\{visible \? "text" : "password"\}/);
+  assert.match(input, /aria-label=\{visible \? "Ocultar senha" : "Mostrar senha"\}/);
+  assert.match(read('components/auth-forms.tsx'), /f\.type === "password" \? <PasswordInput/);
+  assert.match(read('app/login-form.tsx'), /<PasswordInput id="password"/);
+});
