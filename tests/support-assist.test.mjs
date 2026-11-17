@@ -3,6 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { PGlite } from '@electric-sql/pglite';
+import { BEFORE_SUPPORT } from './before-support.mjs';
 import { loadTs } from './load-ts.mjs';
 
 const read = (p) => readFileSync(p, 'utf8');
@@ -15,6 +16,7 @@ async function database() {
   await db.exec(`create role anon; create role authenticated; create role service_role bypassrls;
     create schema extensions; create schema vault;`);
   await db.exec(read('backups/schema/rn-integra-schema.sql').replace(/^create extension .*$/gm, ''));
+  await db.exec(BEFORE_SUPPORT);
   await db.exec(read('supabase/migrations/20261119120000_support_staff.sql'));
   for (const file of ['20261120120000_support_tickets', '20261121120000_support_assisted_access', '20261121130000_support_ticket_assignee',
     '20261121140000_support_audit_append_only', '20261122120000_support_accounts']) await db.exec(read(`supabase/migrations/${file}.sql`));

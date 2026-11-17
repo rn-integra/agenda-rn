@@ -3,6 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { PGlite } from '@electric-sql/pglite';
+import { BEFORE_SUPPORT } from './before-support.mjs';
 import { loadTs } from './load-ts.mjs';
 
 const MIGRATION = 'supabase/migrations/20261119120000_support_staff.sql';
@@ -59,6 +60,7 @@ test('banco: tabelas do suporte fechadas para o navegador e auditoria só acresc
   await db.exec(`create role anon; create role authenticated; create role service_role bypassrls;
     create schema extensions; create schema vault;`);
   await db.exec(read('backups/schema/rn-integra-schema.sql').replace(/^create extension .*$/gm, ''));
+  await db.exec(BEFORE_SUPPORT);
   await db.exec(read(MIGRATION));
   await db.exec(read(MIGRATION)); // reaplicar não quebra
   for (const table of ['platform_staff', 'support_audit']) {
@@ -176,6 +178,7 @@ test('banco: aviso silenciado não repete, mas avisa se piorar', async () => {
   await db.exec(`create role anon; create role authenticated; create role service_role bypassrls;
     create schema extensions; create schema vault;`);
   await db.exec(read('backups/schema/rn-integra-schema.sql').replace(/^create extension .*$/gm, ''));
+  await db.exec(BEFORE_SUPPORT);
   await db.exec(read('supabase/migrations/20261119130000_monitor_snooze.sql'));
   const record = async (severity) => (await db.query(`select public.record_monitor_incident('check:teste:x','production','check',$1,'Teste',null,null,null) r`, [severity])).rows[0].r;
   assert.equal((await record('warning')).alert, true);
@@ -289,6 +292,7 @@ test('banco: registro do suporte recusa alterar, apagar e truncar, para qualquer
   await db.exec(`create role anon; create role authenticated; create role service_role bypassrls;
     create schema extensions; create schema vault;`);
   await db.exec(read('backups/schema/rn-integra-schema.sql').replace(/^create extension .*$/gm, ''));
+  await db.exec(BEFORE_SUPPORT);
   await db.exec(read(MIGRATION));
   await db.exec(read('supabase/migrations/20261121140000_support_audit_append_only.sql'));
   await db.exec(read('supabase/migrations/20261121140000_support_audit_append_only.sql')); // reaplicar não quebra
