@@ -252,3 +252,51 @@ test('organizações: páginas exigem a equipe, a ficha fica registrada e nada d
   assert.equal(matchesSearch('Clínica São José', 'sao jose'), true);
   assert.equal(matchesSearch('Clínica São José', 'outra'), false);
 });
+
+test('registro: visão geral mostra só as 5 últimas e o resto fica na página com filtros', () => {
+  const home = read('app/suporte/(console)/page.tsx');
+  assert.match(home, /const RECENT_ACTIVITY = 5;/);
+  assert.match(home, /\.limit\(RECENT_ACTIVITY\)/);
+  assert.match(home, /href="\/suporte\/registro"/);
+  assert.match(read('app/suporte/(console)/registro/page.tsx'), /await requireSupportPage\(\);/);
+  assert.match(read('app/api/support/audit/export/route.ts'), /await requireSupportApi\(\);[\s\S]*supportAudit\(staffId, "audit_export"/);
+  const help = read('app/ajuda/page.tsx');
+  assert.match(help, /const CLINIC_LOG_SIZE = 8;/);
+  assert.ok(!help.includes('overflow-y-auto'), 'sem rolagem sem fim no registro da clínica');
+});
+
+test('registro: filtros da URL são validados e o CSV não vira fórmula', () => {
+  const log = loadTs('lib/support/audit-log.ts', { '@/lib/supabase-admin': {} });
+  const f = log.parseAuditFilters({ pessoa: '12', acao: 'user_unlock', organizacao: '  Clínica  ', busca: '#12', de: '2026-11-01', ate: '2026-11-30', pagina: '3' });
+  assert.deepEqual({ ...f }, { staff: 12, action: 'user_unlock', org: 'Clínica', q: '#12', from: '2026-11-01', to: '2026-11-30', page: 3 });
+  const bad = log.parseAuditFilters({ pessoa: 'x', acao: 'drop table', de: '01/11/2026', pagina: '-4' });
+  assert.deepEqual({ ...bad }, { staff: null, action: null, org: null, q: null, from: null, to: null, page: 1 });
+  assert.equal(log.dayStart('2026-11-17'), '2026-11-17T03:00:00.000Z', 'dia de São Paulo');
+  assert.equal(log.dayEnd('2026-11-17'), '2026-11-18T03:00:00.000Z');
+  assert.equal(log.likePattern('50%_a'), '%50' + String.fromCharCode(92) + '%' + String.fromCharCode(92) + '_a%', '% e _ viram letras');
+  const csv = log.auditCsv([{ id: 1, created_at: '2026-11-17T12:00:00Z', staff_user_id: 12, staffName: '=HYPERLINK("x")', action: 'user_unlock',
+    organization_id: 'o', organization: 'Clínica "A"', target: 'Ana', metadata: {} }]);
+  assert.ok(csv.startsWith('﻿"Data e hora (UTC)";'));
+  assert.ok(csv.includes(`"'=HYPERLINK(""x"")"`), 'texto com = vira texto, não fórmula');
+  assert.ok(csv.includes('"Clínica ""A"""'));
+  assert.ok(csv.includes('"desbloqueou o login de uma pessoa"'));
+});
+
+test('banco: registro do suporte recusa alterar, apagar e truncar, para qualquer papel', async () => {
+  const db = new PGlite();
+  await db.exec(`create role anon; create role authenticated; create role service_role bypassrls;
+    create schema extensions; create schema vault;`);
+  await db.exec(read('backups/schema/rn-integra-schema.sql').replace(/^create extension .*$/gm, ''));
+  await db.exec(read(MIGRATION));
+  await db.exec(read('supabase/migrations/20261121140000_support_audit_append_only.sql'));
+  await db.exec(read('supabase/migrations/20261121140000_support_audit_append_only.sql')); // reaplicar não quebra
+  await db.exec(`insert into public.users(id,email,name,role,active,created_at,updated_at) values (12,'s@rn.test','S','general_manager',true,now(),now());
+    insert into public.support_audit(staff_user_id, action, target) values (12, 'organization_view', 'Clínica')`);
+  await assert.rejects(() => db.query(`update public.support_audit set target = 'outra'`), /não pode ser alterado/);
+  await assert.rejects(() => db.query(`delete from public.support_audit`), /não pode ser alterado/);
+  await assert.rejects(() => db.query(`truncate public.support_audit`), /não pode ser alterado/);
+  assert.equal((await db.query(`select target from public.support_audit`)).rows[0].target, 'Clínica');
+  await db.query(`insert into public.support_audit(staff_user_id, action) values (12, 'monitor_run')`);
+  assert.equal((await db.query(`select count(*)::int n from public.support_audit`)).rows[0].n, 2, 'acrescentar continua funcionando');
+  await db.close();
+});

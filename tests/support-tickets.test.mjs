@@ -33,6 +33,8 @@ test('banco: chamados fechados para o navegador e mensagens só acrescentam', as
   await db.exec(read('backups/schema/rn-integra-schema.sql').replace(/^create extension .*$/gm, ''));
   await db.exec(read(MIGRATION));
   await db.exec(read(MIGRATION)); // reaplicar não quebra
+  await db.exec(read('supabase/migrations/20261121130000_support_ticket_assignee.sql'));
+  await db.exec(read('supabase/migrations/20261121130000_support_ticket_assignee.sql'));
   for (const table of ['support_tickets', 'support_ticket_messages']) {
     const rls = await db.query(`select relrowsecurity r from pg_class where oid = 'public.${table}'::regclass`);
     assert.equal(rls.rows[0].r, true, table + ' com RLS');
@@ -46,6 +48,7 @@ test('banco: chamados fechados para o navegador e mensagens só acrescentam', as
   assert.deepEqual(await Promise.all(['SELECT', 'INSERT', 'UPDATE', 'DELETE'].map((p) => can('support_ticket_messages', p))), [true, true, false, false]);
   const columns = await db.query(`select column_name from information_schema.columns where table_name='support_tickets'`);
   assert.ok(!columns.rows.some((c) => /patient|cpf/i.test(c.column_name)), 'nenhuma coluna de paciente');
+  assert.ok(columns.rows.some((c) => c.column_name === 'assigned_staff_id'), 'responsável do suporte');
   await db.close();
 });
 
@@ -77,8 +80,17 @@ test('nova mensagem: o status só muda se ninguém mexeu antes (409 em corrida)'
   const update = calls.find((c) => c[0] === 'update')[2];
   assert.equal(update.status, 'waiting_customer');
   assert.equal(update.last_message_from, 'support');
+  assert.equal(update.assigned_staff_id, 12, 'primeira ação do suporte define o responsável');
+  assert.ok(update.assigned_at);
   assert.deepEqual(calls.filter((c) => c[0] === 'eq').map((c) => c.slice(1)), [['id', 3], ['status', 'open']]);
   assert.deepEqual(calls.find((c) => c[0] === 'insert')[2], { ticket_id: 3, author_user_id: 12, from_support: true, body: 'Olá' });
+
+  calls.length = 0;
+  await load([{ id: 3 }]).addTicketMessage({ id: 3, status: 'waiting_customer', assigned_staff_id: 15 }, { authorId: 12, fromSupport: true, body: 'Oi', status: 'resolved' });
+  assert.equal(calls.find((c) => c[0] === 'update')[2].assigned_staff_id, undefined, 'responsável não muda depois');
+  calls.length = 0;
+  await load([{ id: 3 }]).addTicketMessage({ id: 3, status: 'waiting_customer' }, { authorId: 8, fromSupport: false, body: 'Oi', status: 'open' });
+  assert.equal(calls.find((c) => c[0] === 'update')[2].assigned_staff_id, undefined, 'mensagem da clínica não define responsável');
 
   calls.length = 0;
   await assert.rejects(() => load([]).addTicketMessage({ id: 3, status: 'open' }, { authorId: 12, fromSupport: true, body: 'x', status: 'resolved' }), (e) => e.status === 409);
@@ -192,6 +204,8 @@ test('telas: Ajuda no cabeçalho e no menu, páginas protegidas e Chamados no co
   assert.match(read('app/ajuda/[id]/page.tsx'), /if \(!data \|\| !canSeeTicket\(session, data\.ticket\)\) notFound\(\);/);
   for (const page of ['chamados/page.tsx', 'chamados/[id]/page.tsx']) assert.match(read(`app/suporte/(console)/${page}`), /await requireSupportPage\(\);/, page);
   assert.match(read('app/suporte/(console)/nav.tsx'), /href: "\/suporte\/chamados", label: "Chamados"/);
+  assert.match(read('app/suporte/(console)/chamados/page.tsx'), /<span>Responsável<\/span>/);
+  assert.match(read('app/suporte/(console)/chamados/page.tsx'), /\{ticket\.assignee \|\| "Sem responsável"\}/);
   const data = read('lib/support/tickets.ts');
   for (const table of ['patients', 'appointments', 'app_state']) assert.ok(!data.includes(`from("${table}`), table);
 });

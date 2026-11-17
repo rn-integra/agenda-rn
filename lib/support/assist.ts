@@ -41,8 +41,8 @@ export async function revokeGrant(grantId: number, revokedBy: number) {
 export async function organizationSupportLog(organizationId: string) {
   const db = getSupabaseAdmin();
   const [grants, audit] = await Promise.all([
-    db.from("support_access_grants").select(GRANT_COLUMNS).eq("organization_id", organizationId).order("created_at", { ascending: false }).limit(10),
-    db.from("support_audit").select("id,staff_user_id,action,created_at").eq("organization_id", organizationId).order("created_at", { ascending: false }).limit(30),
+    db.from("support_access_grants").select(GRANT_COLUMNS).eq("organization_id", organizationId).order("created_at", { ascending: false }).limit(8),
+    db.from("support_audit").select("id,staff_user_id,action,created_at").eq("organization_id", organizationId).order("created_at", { ascending: false }).limit(8),
   ]);
   dbError(grants.error, "Read support grants"); dbError(audit.error, "Read support audit for organization");
   const grantRows = (grants.data || []) as Grant[];

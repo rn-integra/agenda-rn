@@ -101,7 +101,8 @@ update public.platform_staff set active = false where user_id = <id>;
 -- Perdeu o celular ou a chave SUPABASE_SECRET_KEY foi trocada: zerar o 2FA para configurar de novo
 update public.platform_staff set mfa_secret_enc = null, mfa_enabled_at = null, mfa_last_step = null where user_id = <id>;
 
--- O que o suporte fez nos últimos 7 dias
+-- O que o suporte fez nos últimos 7 dias (no console: /suporte/registro, com filtros e CSV).
+-- O registro não aceita UPDATE, DELETE nem TRUNCATE (trava support_audit_append_only), nem pelo SQL Editor.
 select created_at, staff_user_id, action, organization_id, target from public.support_audit
 where created_at > now() - interval '7 days' order by created_at desc;
 

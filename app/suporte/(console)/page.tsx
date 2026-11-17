@@ -10,6 +10,8 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Suporte — RN Integra", robots: { index: false, follow: false } };
 
 const ACTIONS = SUPPORT_ACTION_LABEL;
+// Só as últimas atividades: o histórico completo, com filtros, fica em /suporte/registro.
+const RECENT_ACTIVITY = 5;
 
 // Visão geral do console: estado do sistema, equipe e o que o suporte fez por último.
 export default async function SupportHome() {
@@ -18,7 +20,7 @@ export default async function SupportHome() {
   const [monitor, staff, audit, tickets] = await Promise.all([
     loadMonitor(),
     db.from("platform_staff").select("user_id,mfa_enabled_at,created_at").eq("active", true).order("created_at"),
-    db.from("support_audit").select("id,staff_user_id,action,target,created_at").order("created_at", { ascending: false }).limit(15),
+    db.from("support_audit").select("id,staff_user_id,action,target,created_at").order("created_at", { ascending: false }).limit(RECENT_ACTIVITY),
     ticketCounts(),
   ]);
   dbError(staff.error, "Read platform staff"); dbError(audit.error, "Read support audit");
@@ -59,7 +61,7 @@ export default async function SupportHome() {
         </ul>
       </Card>
 
-      <Card title="Registro de atividades" text="Tudo o que a equipe faz fica registrado e não pode ser alterado nem apagado.">
+      <Card title="Registro de atividades" text="Últimas ações da equipe. O registro não pode ser alterado nem apagado.">
         {entries.length === 0 ? <Empty>Nenhuma atividade registrada.</Empty> :
           <ol className="relative space-y-4 border-l border-slate-200 pl-5">
             {entries.map(entry => <li key={entry.id} className="relative">
@@ -69,6 +71,7 @@ export default async function SupportHome() {
               <time className="mt-0.5 block text-xs text-slate-400" dateTime={entry.created_at}>{dateTime.format(new Date(entry.created_at))}</time>
             </li>)}
           </ol>}
+        <Link href="/suporte/registro" className="mt-4 inline-flex text-sm font-medium text-[#12857f] hover:underline">Ver registro completo →</Link>
       </Card>
     </div>
   </>;

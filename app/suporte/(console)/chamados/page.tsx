@@ -32,19 +32,25 @@ export default async function TicketsPage({ searchParams }: { searchParams: Prom
     </nav>
     <Card>
       {tickets.length === 0 ? <Empty>Nenhum chamado aqui.</Empty> :
-        <ul className="divide-y divide-slate-100">{tickets.map(ticket => <li key={ticket.id}>
-          <Link href={`/suporte/chamados/${ticket.id}`} className="-mx-2 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl px-2 py-3 hover:bg-slate-50">
-            <span className="min-w-0 flex-1">
-              <span className="flex items-center gap-2">
-                {ticket.last_message_from === "customer" && ticket.status !== "resolved" && <span className="size-2 shrink-0 rounded-full bg-[#12857f]" title="Última mensagem é da clínica" />}
-                <span className="truncate font-medium text-slate-900">{ticket.subject}</span>
+        <div>
+          <div className="hidden grid-cols-[minmax(0,1fr)_11rem_9rem_9rem] gap-4 border-b border-slate-100 pb-2 text-xs font-medium uppercase tracking-wide text-slate-500 md:grid">
+            <span>Chamado</span><span>Responsável</span><span>Última mensagem</span><span>Status</span>
+          </div>
+          <ul className="divide-y divide-slate-100">{tickets.map(ticket => <li key={ticket.id}>
+            <Link href={`/suporte/chamados/${ticket.id}`} className="-mx-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-xl px-2 py-3 hover:bg-slate-50 md:grid md:grid-cols-[minmax(0,1fr)_11rem_9rem_9rem]">
+              <span className="min-w-0 basis-full md:basis-auto">
+                <span className="flex items-center gap-2">
+                  {ticket.last_message_from === "customer" && ticket.status !== "resolved" && <span className="size-2 shrink-0 rounded-full bg-[#12857f]" title="Última mensagem é da clínica" />}
+                  <span className="truncate font-medium text-slate-900">{ticket.subject}</span>
+                </span>
+                <span className="mt-0.5 block truncate text-xs text-slate-500">#{ticket.id} · {ticket.organization} · {ticket.author} · {CATEGORY_LABEL[ticket.category]}</span>
               </span>
-              <span className="mt-0.5 block text-xs text-slate-500">#{ticket.id} · {ticket.organization} · {ticket.author} · {CATEGORY_LABEL[ticket.category]}</span>
-            </span>
-            <span className="text-xs text-slate-500">{ticket.last_message_from === "customer" ? "Clínica" : "Suporte"} {ago(ticket.last_message_at)}</span>
-            <StatusBadge status={ticket.status} label={SUPPORT_STATUS_LABEL[ticket.status]} />
-          </Link>
-        </li>)}</ul>}
+              <span className={`truncate text-sm ${ticket.assignee ? "text-slate-700" : "italic text-slate-400"}`}><span className="text-slate-400 md:hidden">Responsável: </span>{ticket.assignee || "Sem responsável"}</span>
+              <span className="text-xs text-slate-500">{ticket.last_message_from === "customer" ? "Clínica" : "Suporte"} {ago(ticket.last_message_at)}</span>
+              <span><StatusBadge status={ticket.status} label={SUPPORT_STATUS_LABEL[ticket.status]} /></span>
+            </Link>
+          </li>)}</ul>
+        </div>}
     </Card>
   </>;
 }

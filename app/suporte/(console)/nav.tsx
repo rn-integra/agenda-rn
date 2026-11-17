@@ -1,13 +1,14 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, Building2, LayoutDashboard, LifeBuoy } from "lucide-react";
+import { Activity, Building2, LayoutDashboard, LifeBuoy, ScrollText } from "lucide-react";
 
 const ITEMS = [
   { href: "/suporte", label: "Visão geral", icon: LayoutDashboard },
   { href: "/suporte/monitoramento", label: "Monitoramento", icon: Activity },
   { href: "/suporte/organizacoes", label: "Organizações", icon: Building2 },
   { href: "/suporte/chamados", label: "Chamados", icon: LifeBuoy },
+  { href: "/suporte/registro", label: "Registro", icon: ScrollText },
 ] as const;
 
 // Menu do console.

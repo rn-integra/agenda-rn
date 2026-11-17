@@ -25,6 +25,7 @@ export default async function SupportTicketPage({ params }: { params: Promise<{ 
   const facts: [string, React.ReactNode][] = [
     ["Organização", <Link key="org" href={`/suporte/organizacoes/${ticket.organization_id}`} className="font-medium text-[#12857f] hover:underline">{ticket.organization}</Link>],
     ["Aberto por", `${ticket.author}${context.role ? ` (${ROLE_LABEL[context.role] || context.role})` : ""}`],
+    ["Responsável no suporte", ticket.assignee ? `${ticket.assignee}${ticket.assigned_at ? ` · desde ${dateTime.format(new Date(ticket.assigned_at))}` : ""}` : "Sem responsável (fica com quem responder primeiro)"],
     ["Tela de origem", context.page || "—"],
     ["Navegador", context.browser || "—"],
     ["Versão do sistema", context.version || "—"],

@@ -13,6 +13,8 @@ import { StatusBadge, helpDateTime, panel } from "./ui";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Ajuda — RN Integra" };
+// Registro do suporte que a gerência vê aqui: só as ações mais recentes, sem rolagem sem fim.
+const CLINIC_LOG_SIZE = 8;
 
 // Ajuda e suporte: abrir um chamado para a equipe da RN Integra e acompanhar as respostas.
 // A gerência vê os chamados de toda a organização; as demais pessoas, só os que abriram.
@@ -85,10 +87,10 @@ export default async function HelpPage({ searchParams }: { searchParams: Promise
               <h3 className="mb-2 text-sm font-semibold text-slate-800">Registro do suporte nesta organização</h3>
               {log.actions.length === 0 && log.grants.length === 0
                 ? <p className="rounded-xl border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-500">O suporte ainda não fez nada nesta organização.</p>
-                : <ul className="max-h-80 divide-y divide-slate-100 overflow-y-auto pr-1 text-sm">{[
+                : <ul className="divide-y divide-slate-100 text-sm">{[
                   ...log.actions.map(a => ({ key: `a${a.id}`, at: a.created_at, text: <><span className="font-medium text-slate-800">{a.staffName}</span> <span className="text-slate-500">(suporte)</span> {supportActionLabel(a.action)}</> })),
                   ...log.grants.map(g => ({ key: `g${g.id}`, at: g.created_at, text: <><span className="font-medium text-slate-800">{g.grantedByName}</span> liberou o acesso até {helpDateTime.format(new Date(g.expires_at))}{g.revoked_at ? ` (encerrado por ${g.revokedByName} em ${helpDateTime.format(new Date(g.revoked_at))})` : ""}</> })),
-                ].sort((a, b) => b.at.localeCompare(a.at)).map(item => <li key={item.key} className="flex items-baseline justify-between gap-3 py-2">
+                ].sort((a, b) => b.at.localeCompare(a.at)).slice(0, CLINIC_LOG_SIZE).map(item => <li key={item.key} className="flex items-baseline justify-between gap-3 py-2">
                   <span className="text-slate-600">{item.text}</span>
                   <time className="shrink-0 text-xs text-slate-400" dateTime={item.at}>{helpDateTime.format(new Date(item.at))}</time>
                 </li>)}</ul>}

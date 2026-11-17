@@ -8,11 +8,12 @@ export type Ticket = {
   id: number; organization_id: string; created_by: number; subject: string; category: TicketCategory;
   status: TicketStatus; context: Record<string, string | null>; last_message_from: "customer" | "support";
   last_message_at: string; resolved_at: string | null; created_at: string;
+  assigned_staff_id: number | null; assigned_at: string | null;
 };
 export type TicketMessage = { id: number; author_user_id: number; from_support: boolean; body: string; created_at: string; author: string };
-export type TicketRow = Ticket & { author: string; organization: string };
+export type TicketRow = Ticket & { author: string; organization: string; assignee: string | null };
 
-const TICKET_COLUMNS = "id,organization_id,created_by,subject,category,status,context,last_message_from,last_message_at,resolved_at,created_at";
+const TICKET_COLUMNS = "id,organization_id,created_by,subject,category,status,context,last_message_from,last_message_at,resolved_at,created_at,assigned_staff_id,assigned_at";
 
 async function userNames(ids: number[]) {
   const unique = [...new Set(ids)];
@@ -32,8 +33,10 @@ async function organizationNames(ids: string[]) {
 
 async function withNames(tickets: Ticket[]): Promise<TicketRow[]> {
   const [authors, orgs] = await Promise.all([
-    userNames(tickets.map(t => Number(t.created_by))), organizationNames(tickets.map(t => t.organization_id))]);
-  return tickets.map(t => ({ ...t, author: authors.get(Number(t.created_by)) || "—", organization: orgs.get(t.organization_id) || "—" }));
+    userNames(tickets.flatMap(t => [Number(t.created_by), ...(t.assigned_staff_id ? [Number(t.assigned_staff_id)] : [])])),
+    organizationNames(tickets.map(t => t.organization_id))]);
+  return tickets.map(t => ({ ...t, author: authors.get(Number(t.created_by)) || "—", organization: orgs.get(t.organization_id) || "—",
+    assignee: t.assigned_staff_id ? authors.get(Number(t.assigned_staff_id)) || "—" : null }));
 }
 
 // Quem está na clínica: a gerência vê todos os chamados da organização ativa; os demais, só os que abriram.
@@ -94,12 +97,14 @@ export async function loadTicket(id: number) {
 
 // Grava uma mensagem e atualiza o chamado (quem falou por último, status). O update é condicionado
 // ao status lido antes, para duas respostas simultâneas não se sobreporem em silêncio.
-export async function addTicketMessage(ticket: Pick<Ticket, "id" | "status">, input: { authorId: number; fromSupport: boolean; body: string | null; status: TicketStatus }) {
+export async function addTicketMessage(ticket: Pick<Ticket, "id" | "status"> & { assigned_staff_id?: number | null }, input: { authorId: number; fromSupport: boolean; body: string | null; status: TicketStatus }) {
   const db = getSupabaseAdmin();
   const now = new Date().toISOString();
-  const values: Record<string, string | null> = { status: input.status, updated_at: now };
+  const values: Record<string, string | number | null> = { status: input.status, updated_at: now };
   if (input.status === "resolved" && ticket.status !== "resolved") values.resolved_at = now;
   if (input.status !== "resolved") values.resolved_at = null;
+  // A primeira pessoa do suporte que atua no chamado fica como responsável.
+  if (input.fromSupport && !ticket.assigned_staff_id) { values.assigned_staff_id = input.authorId; values.assigned_at = now; }
   if (input.body) { values.last_message_at = now; values.last_message_from = input.fromSupport ? "support" : "customer"; }
   const updated = await db.from("support_tickets").update(values).eq("id", ticket.id).eq("status", ticket.status).select("id");
   dbError(updated.error, "Update ticket");

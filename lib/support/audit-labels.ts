@@ -14,6 +14,7 @@ export const SUPPORT_ACTION_LABEL: Record<string, string> = {
   ticket_status: "mudou o status de um chamado",
   assist_start: "entrou com acesso assistido (somente leitura)",
   assist_end: "saiu do acesso assistido",
+  audit_export: "exportou o registro de atividades",
 };
 
 export function supportActionLabel(action: string) {
