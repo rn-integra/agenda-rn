@@ -47,10 +47,20 @@ export async function readJson(request: Request, maximum = 64 * 1024): Promise<R
   } finally { reader.releaseLock(); }
 }
 
-export function secureMutation(handler: (request: Request) => Promise<Response>) {
+// Acesso assistido do suporte é só leitura: com o cookie dele valendo, nenhuma gravação passa
+// (a não ser a rota que encerra o próprio acesso assistido).
+const ASSIST_COOKIE_PATTERN = /(?:^|;\s*)agenda_rn_assist=/;
+async function rejectAssisted(request: Request) {
+  if (!ASSIST_COOKIE_PATTERN.test(request.headers.get('cookie') || '')) return;
+  const { assistedSession } = await import('@/app/authz');
+  if (await assistedSession()) throw new HttpError(403, 'Acesso assistido do suporte é somente leitura.');
+}
+
+export function secureMutation(handler: (request: Request) => Promise<Response>, options: { allowAssisted?: boolean } = {}) {
   return async (request: Request) => {
     try {
       checkMutationOrigin(request);
+      if (!options.allowAssisted) await rejectAssisted(request);
       const response = await handler(request);
       response.headers.set('Cache-Control', 'private, no-store');
       return response;

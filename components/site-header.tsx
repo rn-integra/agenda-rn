@@ -8,9 +8,11 @@ import MobileNavigation from '@/components/mobile-navigation';
 import BillingMobileTables from '@/components/billing-mobile-tables';
 import OrganizationSwitcher from '@/components/organization-switcher';
 import HelpLink from '@/components/help-link';
-export default function SiteHeader({account,active,services}:{services?:DoctorServices;account:{name:string;role:string;doctorId?:string|null};active?:ModuleName}){
+import AssistBanner from '@/components/assist-banner';
+import type {Assist} from '@/app/authz';
+export default function SiteHeader({account,active,services}:{services?:DoctorServices;account:{name:string;role:string;doctorId?:string|null;assist?:Assist};active?:ModuleName}){
  const session={account,services},icons={hub:LayoutDashboard,agenda:CalendarDays,billing:Wallet,denials:ShieldAlert,doctors:Stethoscope,organization:Building2,settings:Settings};
- return <><header className="hub-header">
+ return <>{account.assist&&<AssistBanner staffName={account.assist.staffName} managerName={account.name} expiresAt={account.assist.expiresAt}/>}<header className="hub-header">
   <a className="hub-brand" href={canUseAgenda(session)?'/hub':doctorHome(session)} aria-label="RN Integra — início"><Image src="/agenda-rn-icon.jpg" alt="" width={42} height={42}/><div><strong>RN Integra</strong><span>Gestão de atendimentos</span></div></a>
   <nav className="hub-nav" aria-label="Módulos">{moduleLinks(session).map(link=>{const Icon=icons[link.id];return <a key={link.id} href={link.href} aria-current={active===link.id?'page':undefined}><Icon size={17} aria-hidden="true"/>{link.label}</a>})}</nav>
   <OrganizationSwitcher/>

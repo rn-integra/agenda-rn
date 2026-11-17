@@ -2,26 +2,14 @@ import Link from "next/link";
 import { requireSupportPage } from "@/lib/support/staff";
 import { loadMonitor } from "@/lib/support/monitor";
 import { ticketCounts } from "@/lib/support/tickets";
+import { SUPPORT_ACTION_LABEL } from "@/lib/support/audit-labels";
 import { dbError, getSupabaseAdmin } from "@/lib/supabase-admin";
 import { Card, Empty, PageHeader, Stat, dateTime } from "./ui";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Suporte — RN Integra", robots: { index: false, follow: false } };
 
-const ACTIONS: Record<string, string> = {
-  mfa_enabled: "ativou a verificação em duas etapas",
-  mfa_verified: "entrou no console",
-  monitor_run: "rodou o monitor",
-  incident_resolve: "marcou um incidente como resolvido",
-  incident_snooze: "silenciou o aviso de um incidente",
-  incident_unsnooze: "reativou o aviso de um incidente",
-  organization_view: "abriu a ficha de uma organização",
-  user_unlock: "desbloqueou o login de uma pessoa",
-  user_end_sessions: "encerrou as sessões de uma pessoa",
-  user_reset_link: "enviou um link de nova senha",
-  ticket_reply: "respondeu um chamado",
-  ticket_status: "mudou o status de um chamado",
-};
+const ACTIONS = SUPPORT_ACTION_LABEL;
 
 // Visão geral do console: estado do sistema, equipe e o que o suporte fez por último.
 export default async function SupportHome() {

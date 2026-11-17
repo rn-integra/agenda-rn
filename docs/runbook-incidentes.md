@@ -104,6 +104,11 @@ update public.platform_staff set mfa_secret_enc = null, mfa_enabled_at = null, m
 -- O que o suporte fez nos últimos 7 dias
 select created_at, staff_user_id, action, organization_id, target from public.support_audit
 where created_at > now() - interval '7 days' order by created_at desc;
+
+-- Acesso assistido: liberações ativas e, em emergência, encerrar todas (derruba quem estiver dentro)
+select id, organization_id, granted_by, expires_at from public.support_access_grants where revoked_at is null and expires_at > now();
+update public.support_access_grants set revoked_at = now() where revoked_at is null;
+update public.sessions set expires_at = now() where support_grant_id is not null;
 ```
 
 ## 6. Como ensinar algo novo ao assistente

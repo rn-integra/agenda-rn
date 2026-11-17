@@ -6,6 +6,8 @@ import { supportAudit } from "@/lib/support/audit";
 import { KIND_LABEL, ROLE_LABEL, loadOrganization } from "@/lib/support/organizations";
 import { Card, Empty, PageHeader, Stat, ago, dateTime } from "../../ui";
 import { MemberActions } from "./member-actions";
+import { AssistButton } from "./assist-button";
+import { activeGrant } from "@/lib/support/assist";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Organização — Suporte RN Integra", robots: { index: false, follow: false } };
@@ -22,7 +24,7 @@ export default async function OrganizationPage({ params }: { params: Promise<{ i
   const { session } = await requireSupportPage();
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
-  const data = await loadOrganization(id);
+  const [data, grant] = await Promise.all([loadOrganization(id), activeGrant(id)]);
   if (!data) notFound();
   await supportAudit(session.account.id, "organization_view", { organizationId: id, target: data.org.name.slice(0, 150) });
   const { org, account, team, invites, events } = data;
@@ -41,6 +43,15 @@ export default async function OrganizationPage({ params }: { params: Promise<{ i
       <Stat label="Logins bloqueados" value={blocked} tone={blocked ? "warning" : "ok"} hint={blocked ? "Veja a equipe abaixo" : "Nenhum"} />
       <Stat label="Conta" value={account?.plan || "—"} hint={account ? `Titular: ${data.ownerName || "—"} · ${account.status}` : undefined} />
     </div>
+
+    <Card title="Acesso assistido" text="Ver o sistema como a gerência vê, somente leitura. Só com liberação da gerência, que acompanha tudo pelo registro." className="mt-6">
+      {grant
+        ? <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-slate-700">Liberado por <span className="font-medium">{team.find(m => m.userId === Number(grant.granted_by))?.name || "a gerência"}</span> até <span className="font-medium">{dateTime.format(new Date(grant.expires_at))}</span>{grant.reason ? <span className="text-slate-500"> · {grant.reason}</span> : null}</p>
+          <AssistButton organizationId={org.id} />
+        </div>
+        : <Empty>Sem liberação ativa. A gerência libera em Ajuda e suporte → Acesso assistido.</Empty>}
+    </Card>
 
     <Card title="Equipe" text="Pessoas com acesso a esta organização." className="mt-6">
       <ul className="divide-y divide-slate-100">

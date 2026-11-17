@@ -10,6 +10,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   try {
     const session = await getSession();
     if (!session || !isManager(session.account.role)) throw new HttpError(403, "Somente a gerência exporta dados de pacientes.");
+    if (session.account.assist) throw new HttpError(403, "O acesso assistido do suporte não exporta dados de pacientes.");
     const { id } = await params;
     if (!/^[A-Za-z0-9_-]{1,128}$/.test(id)) throw new HttpError(400, "Paciente inválido.");
     await consumeLimit("patient-export", String(session.account.id), 60, 3600);
