@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireSupportPage } from "@/lib/support/staff";
 import { loadMonitor } from "@/lib/support/monitor";
+import { ticketCounts } from "@/lib/support/tickets";
 import { dbError, getSupabaseAdmin } from "@/lib/supabase-admin";
 import { Card, Empty, PageHeader, Stat, dateTime } from "./ui";
 
@@ -18,22 +19,21 @@ const ACTIONS: Record<string, string> = {
   user_unlock: "desbloqueou o login de uma pessoa",
   user_end_sessions: "encerrou as sessões de uma pessoa",
   user_reset_link: "enviou um link de nova senha",
+  ticket_reply: "respondeu um chamado",
+  ticket_status: "mudou o status de um chamado",
 };
-
-const daysAgo = (days: number) => new Date(Date.now() - days * 86_400_000).toISOString();
 
 // Visão geral do console: estado do sistema, equipe e o que o suporte fez por último.
 export default async function SupportHome() {
   await requireSupportPage();
   const db = getSupabaseAdmin();
-  const weekAgo = daysAgo(7);
-  const [monitor, staff, audit, week] = await Promise.all([
+  const [monitor, staff, audit, tickets] = await Promise.all([
     loadMonitor(),
     db.from("platform_staff").select("user_id,mfa_enabled_at,created_at").eq("active", true).order("created_at"),
     db.from("support_audit").select("id,staff_user_id,action,target,created_at").order("created_at", { ascending: false }).limit(15),
-    db.from("support_audit").select("id", { count: "exact", head: true }).gte("created_at", weekAgo),
+    ticketCounts(),
   ]);
-  dbError(staff.error, "Read platform staff"); dbError(audit.error, "Read support audit"); dbError(week.error, "Count support audit");
+  dbError(staff.error, "Read platform staff"); dbError(audit.error, "Read support audit");
   const members = (staff.data || []) as { user_id: number; mfa_enabled_at: string | null }[];
   const entries = (audit.data || []) as { id: number; staff_user_id: number; action: string; target: string | null; created_at: string }[];
   const ids = [...new Set([...members.map(s => s.user_id), ...entries.map(a => a.staff_user_id)])];
@@ -51,7 +51,9 @@ export default async function SupportHome() {
       </Link>
       <Stat label="Incidentes abertos" value={monitor.open.length} hint={monitor.open.length ? `${monitor.open.filter(i => i.severity === "critical" || i.severity === "error").length} crítico(s) ou erro(s)` : "Nenhum no momento"} />
       <Stat label="Equipe de suporte" value={members.length} hint={withMfa === members.length ? "Todos com 2FA ativo" : `${members.length - withMfa} sem 2FA ativo`} />
-      <Stat label="Atividades (7 dias)" value={week.count ?? 0} hint="Ações registradas" />
+      <Link href="/suporte/chamados" className="rounded-2xl transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#12857f]">
+        <Stat label="Chamados para responder" tone={tickets.active ? "warning" : "ok"} value={tickets.active} hint={`${tickets.waiting} aguardando cliente · ver fila →`} />
+      </Link>
     </div>
 
     <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]">
