@@ -9,7 +9,7 @@ const LABELS = {
 } as const;
 
 // Ações do suporte sobre uma pessoa. Cada uma pede confirmação e fica no registro de atividades.
-export function MemberActions({ organizationId, userId, name, blocked, self }: { organizationId: string; userId: number; name: string; blocked: boolean; self: boolean }) {
+export function MemberActions({ organizationId, userId, name, blocked }: { organizationId: string; userId: number; name: string; blocked: boolean }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false), [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   async function act(action: keyof typeof LABELS) {
@@ -23,7 +23,7 @@ export function MemberActions({ organizationId, userId, name, blocked, self }: {
     } catch { setMessage({ ok: false, text: "Não foi possível conectar." }); }
     finally { setBusy(false); }
   }
-  const actions = (["unlock", "reset_link", "end_sessions"] as const).filter(a => (a !== "unlock" || blocked) && (a !== "end_sessions" || !self));
+  const actions = (["unlock", "reset_link", "end_sessions"] as const).filter(a => a !== "unlock" || blocked);
   return <div className="flex flex-col items-end gap-1.5">
     <div className="flex flex-wrap justify-end gap-1.5">
       {actions.map(action => <button key={action} type="button" disabled={busy} onClick={() => act(action)}

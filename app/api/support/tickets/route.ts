@@ -15,7 +15,7 @@ const body = z.object({
 // Resposta do suporte e/ou mudança de status de um chamado. Fica no registro de atividades.
 async function act(request: Request) {
   const context = await requireSupportApi();
-  const staffId = context.session.account.id;
+  const staffId = context.staff.id;
   await consumeLimit("support-ticket-action", String(staffId), 120, 3600);
   const parsed = body.safeParse(await readJson(request, 16 * 1024));
   if (!parsed.success) throw new HttpError(400, "Resposta inválida.");

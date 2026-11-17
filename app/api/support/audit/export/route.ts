@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   try {
     const context = await requireSupportApi();
-    const staffId = context.session.account.id;
+    const staffId = context.staff.id;
     await consumeLimit("support-audit-export", String(staffId), 20, 3600);
     const filters = parseAuditFilters(Object.fromEntries(new URL(request.url).searchParams));
     const { entries, total } = await searchSupportAudit(filters, { limit: AUDIT_EXPORT_LIMIT, offset: 0 });

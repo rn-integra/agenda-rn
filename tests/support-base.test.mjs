@@ -79,17 +79,17 @@ test('banco: tabelas do suporte fechadas para o navegador e auditoria só acresc
 
 function verifyApi({ staff = true, code, lastStep = null, enabled = true, stepUpdated = true }) {
   const calls = [];
-  const context = { session: { account: { id: 7, email: 's@rn.test' } }, tokenHash: 'th', mfaEnabled: enabled, mfaVerified: false, secretEnc: 'enc', lastStep };
+  const context = { staff: { id: 7, email: 's@rn.test', name: 'S' }, tokenHash: 'th', mfaEnabled: enabled, mfaVerified: false, secretEnc: 'enc', lastStep };
   const table = (name) => ({
     update(values) { calls.push(['update', name, values]); return this; },
     eq() { return this; }, or(filter) { calls.push(['or', name, filter]); return this; },
-    select: async () => ({ data: stepUpdated ? [{ user_id: 7 }] : [], error: null }),
+    select: async () => ({ data: stepUpdated ? [{ id: 7 }] : [], error: null }),
     then(resolve) { resolve({ error: null }); },
   });
   const cache = new Map();
   const { HttpError } = loadTs('lib/security/http.ts', {}, cache);
   const api = loadTs('app/api/support/mfa/verify/route.ts', {
-    '@/lib/support/staff': { requireSupportApi: async () => { if (!staff) throw new HttpError(404, 'Não encontrado.'); return context; } },
+    '@/lib/support/staff': { requireSupportApi: async () => { if (!staff) throw new HttpError(401, 'Entre no console do suporte.'); return context; } },
     '@/lib/support/mfa-crypto': { decryptMfaSecret: async () => RFC_SECRET },
     '@/lib/support/audit': { supportAudit: async (id, action) => { calls.push(['audit', action]); } },
     '@/lib/security/rate-limit': { consumeLimit: async (scope) => { calls.push(['consume', scope]); }, refundLimit: async (scope) => { calls.push(['refund', scope]); } },
@@ -102,7 +102,7 @@ function verifyApi({ staff = true, code, lastStep = null, enabled = true, stepUp
 
 test('API: só a equipe chega ao 2FA; código certo libera a sessão e fica registrado', async () => {
   const code = await totp.totpCode(RFC_SECRET, totp.currentStep());
-  assert.equal((await verifyApi({ staff: false, code }).post()).status, 404);
+  assert.equal((await verifyApi({ staff: false, code }).post()).status, 401);
 
   const wrong = verifyApi({ code: code === '000000' ? '111111' : '000000' });
   assert.equal((await wrong.post()).status, 400);
@@ -111,33 +111,34 @@ test('API: só a equipe chega ao 2FA; código certo libera a sessão e fica regi
 
   const first = verifyApi({ code, enabled: false });
   assert.equal((await first.post()).status, 200);
-  const stepUpdate = first.calls.find((c) => c[0] === 'update' && c[1] === 'platform_staff');
+  const stepUpdate = first.calls.find((c) => c[0] === 'update' && c[1] === 'support_staff');
   assert.ok(stepUpdate[2].mfa_enabled_at, 'primeiro código ativa o 2FA');
   assert.match(first.calls.find((c) => c[0] === 'or')[2], /^mfa_last_step\.is\.null,mfa_last_step\.lt\.\d+$/);
-  assert.ok(first.calls.find((c) => c[0] === 'update' && c[1] === 'sessions')[2].mfa_verified_at);
+  assert.ok(first.calls.find((c) => c[0] === 'update' && c[1] === 'support_sessions')[2].mfa_verified_at);
   assert.deepEqual(first.calls.filter((c) => c[0] === 'audit').map((c) => c[1]), ['mfa_enabled']);
 
   const again = verifyApi({ code, enabled: true });
   assert.equal((await again.post()).status, 200);
-  assert.equal(again.calls.find((c) => c[0] === 'update' && c[1] === 'platform_staff')[2].mfa_enabled_at, undefined);
+  assert.equal(again.calls.find((c) => c[0] === 'update' && c[1] === 'support_staff')[2].mfa_enabled_at, undefined);
   assert.deepEqual(again.calls.filter((c) => c[0] === 'audit').map((c) => c[1]), ['mfa_verified']);
 
   const raced = verifyApi({ code, stepUpdated: false });
   assert.equal((await raced.post()).status, 400, 'mesmo código usado ao mesmo tempo em outra aba');
-  assert.ok(!raced.calls.some((c) => c[0] === 'update' && c[1] === 'sessions'));
+  assert.ok(!raced.calls.some((c) => c[0] === 'update' && c[1] === 'support_sessions'));
 });
 
 test('páginas e rotas do console exigem a equipe e o código confirmado', () => {
   const staff = read('lib/support/staff.ts');
-  assert.match(staff, /\.from\("platform_staff"\)[\s\S]*\.eq\("active", true\)/);
-  assert.match(staff, /if \(!context\) notFound\(\);/);
+  assert.match(staff, /\.from\("support_sessions"\)[\s\S]*support_staff!inner\(/);
+  assert.match(staff, /if \(!result\.data \|\| !staff\?\.active\) return null;/);
+  assert.match(staff, /if \(!context\) redirect\("\/suporte\/entrar"\);/);
   assert.match(staff, /if \(options\.mfa !== false && !context\.mfaVerified\) redirect\("\/suporte\/verificar"\);/);
   assert.match(read('app/suporte/(console)/page.tsx'), /await requireSupportPage\(\);/);
   assert.match(read('app/suporte/verificar/page.tsx'), /requireSupportPage\(\{ mfa: false \}\)/);
   const setup = read('app/api/support/mfa/setup/route.ts');
   assert.match(setup, /if \(context\.mfaEnabled\) throw new HttpError\(409/);
   assert.match(setup, /\.is\("mfa_enabled_at", null\)/);
-  assert.match(setup, /export const POST = secureMutation\(setup\)/);
+  assert.match(setup, /export const POST = secureMutation\(setup, \{ allowAssisted: true \}\)/);
 });
 
 test('console: moldura, visão geral e monitoramento também conferem a equipe', () => {
@@ -145,9 +146,9 @@ test('console: moldura, visão geral e monitoramento também conferem a equipe',
   for (const route of ['run', 'incidents']) {
     const source = read(`app/api/support/monitor/${route}/route.ts`);
     assert.match(source, /await requireSupportApi\(\);/, route);
-    assert.match(source, /supportAudit\(context\.session\.account\.id,/, route);
+    assert.match(source, /supportAudit\(context\.staff\.id,/, route);
   }
-  assert.match(read('app/api/support/monitor/run/route.ts'), /consumeLimit\("support-monitor-run", String\(context\.session\.account\.id\), 3, 600/);
+  assert.match(read('app/api/support/monitor/run/route.ts'), /consumeLimit\("support-monitor-run", String\(context\.staff\.id\), 3, 600/);
   assert.match(read('app/api/support/monitor/incidents/route.ts'), /\.eq\("environment", environment\(\)\)\.is\("resolved_at", null\)/);
 });
 
@@ -194,7 +195,7 @@ function userActionApi({ member = { id: 9, name: 'Ana', email: 'Ana@Clinica.test
   const env = { ...process.env };
   if (email) { process.env.RESEND_API_KEY = 'x'; process.env.EMAIL_FROM = 'y'; } else { delete process.env.RESEND_API_KEY; delete process.env.EMAIL_FROM; }
   const api = loadTs('app/api/support/organizations/users/route.ts', {
-    '@/lib/support/staff': { requireSupportApi: async () => ({ session: { account: { id: staffId } } }) },
+    '@/lib/support/staff': { requireSupportApi: async () => ({ staff: { id: staffId } }) },
     '@/lib/support/audit': { supportAudit: async (id, action, details) => { calls.push(['audit', action, details.organizationId]); } },
     '@/lib/support/organizations': { membershipInOrganization: async () => member },
     '@/lib/security/rate-limit': {
@@ -230,7 +231,8 @@ test('organizações: encerrar sessões e link de nova senha', async () => {
   const response = await end.post({ organizationId: ORG, userId: 9, action: 'end_sessions' });
   assert.equal(response.status, 200);
   assert.match((await response.json()).message, /^2 sessão/);
-  assert.equal((await userActionApi({ staffId: 9 }).post({ organizationId: ORG, userId: 9, action: 'end_sessions' })).status, 400, 'a própria sessão é pelo Sair');
+  // Conta do suporte não é usuário da clínica: o mesmo número não quer dizer a mesma pessoa.
+  assert.equal((await userActionApi({ staffId: 9 }).post({ organizationId: ORG, userId: 9, action: 'end_sessions' })).status, 200);
 
   const reset = userActionApi();
   assert.equal((await reset.post({ organizationId: ORG, userId: 9, action: 'reset_link' })).status, 200);
@@ -245,7 +247,7 @@ test('organizações: páginas exigem a equipe, a ficha fica registrada e nada d
   const list = read('app/suporte/(console)/organizacoes/page.tsx'), detail = read('app/suporte/(console)/organizacoes/[id]/page.tsx');
   assert.match(list, /await requireSupportPage\(\);/);
   assert.match(detail, /await requireSupportPage\(\);/);
-  assert.match(detail, /supportAudit\(session\.account\.id, "organization_view"/);
+  assert.match(detail, /supportAudit\(staff\.id, "organization_view"/);
   const data = read('lib/support/organizations.ts');
   for (const table of ['patients', 'appointments', 'app_state', 'financial']) assert.ok(!data.includes(`from("${table}`), table);
   const { matchesSearch } = loadTs('lib/support/organizations.ts', { '@/lib/supabase-admin': {}, '@/lib/security/rate-limit': {} });
@@ -274,7 +276,7 @@ test('registro: filtros da URL são validados e o CSV não vira fórmula', () =>
   assert.equal(log.dayStart('2026-11-17'), '2026-11-17T03:00:00.000Z', 'dia de São Paulo');
   assert.equal(log.dayEnd('2026-11-17'), '2026-11-18T03:00:00.000Z');
   assert.equal(log.likePattern('50%_a'), '%50' + String.fromCharCode(92) + '%' + String.fromCharCode(92) + '_a%', '% e _ viram letras');
-  const csv = log.auditCsv([{ id: 1, created_at: '2026-11-17T12:00:00Z', staff_user_id: 12, staffName: '=HYPERLINK("x")', action: 'user_unlock',
+  const csv = log.auditCsv([{ id: 1, created_at: '2026-11-17T12:00:00Z', staff_id: 12, staffName: '=HYPERLINK("x")', action: 'user_unlock',
     organization_id: 'o', organization: 'Clínica "A"', target: 'Ana', metadata: {} }]);
   assert.ok(csv.startsWith('﻿"Data e hora (UTC)";'));
   assert.ok(csv.includes(`"'=HYPERLINK(""x"")"`), 'texto com = vira texto, não fórmula');

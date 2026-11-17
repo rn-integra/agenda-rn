@@ -42,17 +42,23 @@ export async function organizationSupportLog(organizationId: string) {
   const db = getSupabaseAdmin();
   const [grants, audit] = await Promise.all([
     db.from("support_access_grants").select(GRANT_COLUMNS).eq("organization_id", organizationId).order("created_at", { ascending: false }).limit(8),
-    db.from("support_audit").select("id,staff_user_id,action,created_at").eq("organization_id", organizationId).order("created_at", { ascending: false }).limit(8),
+    db.from("support_audit").select("id,staff_id,action,created_at").eq("organization_id", organizationId).order("created_at", { ascending: false }).limit(8),
   ]);
   dbError(grants.error, "Read support grants"); dbError(audit.error, "Read support audit for organization");
   const grantRows = (grants.data || []) as Grant[];
-  const auditRows = (audit.data || []) as { id: number; staff_user_id: number; action: string; created_at: string }[];
-  const ids = [...new Set([...grantRows.flatMap(g => [g.granted_by, g.revoked_by]), ...auditRows.map(a => a.staff_user_id)].filter((v): v is number => v != null).map(Number))];
-  const users = ids.length ? await db.from("users").select("id,name").in("id", ids) : { data: [], error: null };
-  dbError(users.error, "Read support log names");
-  const names = new Map<number, string>((users.data || []).map((u: { id: number; name: string | null }) => [Number(u.id), String(u.name || "")]));
+  const auditRows = (audit.data || []) as { id: number; staff_id: number; action: string; created_at: string }[];
+  // Quem liberou é da clínica (users); quem agiu é do suporte (support_staff).
+  const userIds = [...new Set(grantRows.flatMap(g => [g.granted_by, g.revoked_by]).filter((v): v is number => v != null).map(Number))];
+  const staffIds = [...new Set(auditRows.map(a => Number(a.staff_id)))];
+  const [users, staff] = await Promise.all([
+    userIds.length ? db.from("users").select("id,name").in("id", userIds) : Promise.resolve({ data: [], error: null }),
+    staffIds.length ? db.from("support_staff").select("id,name").in("id", staffIds) : Promise.resolve({ data: [], error: null }),
+  ]);
+  dbError(users.error, "Read support log names"); dbError(staff.error, "Read support staff names");
+  const toMap = (rows: { id: number; name: string | null }[] | null) => new Map<number, string>((rows || []).map(r => [Number(r.id), String(r.name || "")]));
+  const names = toMap(users.data), staffNames = toMap(staff.data);
   return {
     grants: grantRows.map(g => ({ ...g, grantedByName: names.get(Number(g.granted_by)) || "—", revokedByName: g.revoked_by ? names.get(Number(g.revoked_by)) || "—" : null })),
-    actions: auditRows.map(a => ({ ...a, staffName: names.get(Number(a.staff_user_id)) || "Equipe RN Integra" })),
+    actions: auditRows.map(a => ({ ...a, staffName: staffNames.get(Number(a.staff_id)) || "Equipe RN Integra" })),
   };
 }

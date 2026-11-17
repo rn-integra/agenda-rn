@@ -16,7 +16,7 @@ const body = z.object({ organizationId: z.string().uuid() }).strict();
 // em nome de quem liberou, marcada com quem do suporte está usando, e só de leitura.
 async function start(request: Request) {
   const context = await requireSupportApi();
-  const staffId = context.session.account.id;
+  const staffId = context.staff.id;
   await consumeLimit("support-assist-start", String(staffId), 10, 3600);
   const parsed = body.safeParse(await readJson(request, 1024));
   if (!parsed.success) throw new HttpError(400, "Organização inválida.");

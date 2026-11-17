@@ -17,7 +17,7 @@ const body = z.object({
 // desbloquear o login, encerrar as sessões abertas ou mandar o link de nova senha para o e-mail dela.
 async function act(request: Request) {
   const context = await requireSupportApi();
-  const staffId = context.session.account.id;
+  const staffId = context.staff.id;
   await consumeLimit("support-user-action", String(staffId), 30, 3600);
   const parsed = body.safeParse(await readJson(request, 1024));
   if (!parsed.success) throw new HttpError(400, "Ação inválida.");
@@ -31,7 +31,6 @@ async function act(request: Request) {
     await Promise.all(LOGIN_FAILURE_LIMITS.map(({ scope }) => clearLimit(scope, email)));
     message = "Login desbloqueado. A pessoa já pode tentar de novo.";
   } else if (action === "end_sessions") {
-    if (userId === staffId) throw new HttpError(400, "Para encerrar a sua própria sessão, use Sair.");
     const result = await getSupabaseAdmin().from("sessions").delete().eq("user_id", userId).select("id");
     dbError(result.error, "End sessions");
     message = `${result.data?.length ?? 0} sessão(ões) encerrada(s). A pessoa precisará entrar de novo.`;

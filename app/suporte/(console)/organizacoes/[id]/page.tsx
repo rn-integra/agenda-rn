@@ -21,12 +21,12 @@ const EVENT_LABEL: Record<string, string> = {
 // Ficha de uma organização para o suporte: cadastro, equipe, convites e acessos recentes.
 // Abrir a ficha fica no registro de atividades (o suporte só olha uma clínica com motivo).
 export default async function OrganizationPage({ params }: { params: Promise<{ id: string }> }) {
-  const { session } = await requireSupportPage();
+  const { staff } = await requireSupportPage();
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
   const [data, grant] = await Promise.all([loadOrganization(id), activeGrant(id)]);
   if (!data) notFound();
-  await supportAudit(session.account.id, "organization_view", { organizationId: id, target: data.org.name.slice(0, 150) });
+  await supportAudit(staff.id, "organization_view", { organizationId: id, target: data.org.name.slice(0, 150) });
   const { org, account, team, invites, events } = data;
   const lastLogin = team.map(m => m.lastLogin).filter(Boolean).sort().at(-1) ?? null;
   const blocked = team.filter(m => m.blockedUntil).length;
@@ -72,7 +72,7 @@ export default async function OrganizationPage({ params }: { params: Promise<{ i
               <span className="rounded-full px-2 py-0.5 text-slate-500">Último acesso: {member.lastLogin ? ago(member.lastLogin) : "nunca"}</span>
             </div>
           </div>
-          <MemberActions organizationId={org.id} userId={member.userId} name={member.name} blocked={Boolean(member.blockedUntil)} self={member.userId === session.account.id} />
+          <MemberActions organizationId={org.id} userId={member.userId} name={member.name} blocked={Boolean(member.blockedUntil)} />
         </li>)}
       </ul>
     </Card>

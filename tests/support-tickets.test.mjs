@@ -83,7 +83,7 @@ test('nova mensagem: o status só muda se ninguém mexeu antes (409 em corrida)'
   assert.equal(update.assigned_staff_id, 12, 'primeira ação do suporte define o responsável');
   assert.ok(update.assigned_at);
   assert.deepEqual(calls.filter((c) => c[0] === 'eq').map((c) => c.slice(1)), [['id', 3], ['status', 'open']]);
-  assert.deepEqual(calls.find((c) => c[0] === 'insert')[2], { ticket_id: 3, author_user_id: 12, from_support: true, body: 'Olá' });
+  assert.deepEqual(calls.find((c) => c[0] === 'insert')[2], { ticket_id: 3, author_staff_id: 12, from_support: true, body: 'Olá' });
 
   calls.length = 0;
   await load([{ id: 3 }]).addTicketMessage({ id: 3, status: 'waiting_customer', assigned_staff_id: 15 }, { authorId: 12, fromSupport: true, body: 'Oi', status: 'resolved' });
@@ -147,7 +147,7 @@ function replyApi({ session, ticket, support = false, staff = true }) {
   };
   const api = support
     ? loadTs('app/api/support/tickets/route.ts', {
-      '@/lib/support/staff': { requireSupportApi: async () => { if (!staff) throw new HttpError(404, 'Não encontrado.'); return { session: { account: { id: 12 } } }; } },
+      '@/lib/support/staff': { requireSupportApi: async () => { if (!staff) throw new HttpError(401, 'Entre no console do suporte.'); return { staff: { id: 12 } }; } },
       '@/lib/support/audit': { supportAudit: async (id, action, details) => { calls.push(['audit', action, details.organizationId, { ...details.metadata }]); } },
       '@/lib/support/tickets': tickets,
       '@/lib/security/rate-limit': { consumeLimit: async () => {} },
@@ -183,7 +183,7 @@ test('API do app: responder reabre, resolver fecha e chamado alheio não aparece
 
 test('API do console: só a equipe responde, muda o status e tudo fica registrado', async () => {
   const ticket = { id: 5, organization_id: ORG, created_by: 8, status: 'open', subject: 'Ajuda' };
-  assert.equal((await replyApi({ support: true, staff: false, ticket }).post({ ticketId: 5, status: 'resolved' })).status, 404);
+  assert.equal((await replyApi({ support: true, staff: false, ticket }).post({ ticketId: 5, status: 'resolved' })).status, 401);
 
   const answer = replyApi({ support: true, ticket });
   assert.equal((await answer.post({ ticketId: 5, message: 'Já corrigimos.', status: 'waiting_customer' })).status, 200);

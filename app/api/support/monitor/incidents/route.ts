@@ -26,7 +26,7 @@ async function act(request: Request) {
   dbError(result.error, "Update incident");
   const incident = result.data?.[0];
   if (!incident) throw new HttpError(404, "Incidente não encontrado ou já resolvido.");
-  await supportAudit(context.session.account.id, `incident_${action}`, {
+  await supportAudit(context.staff.id, `incident_${action}`, {
     organizationId: incident.organization_id, target: `#${incident.id} ${String(incident.title).slice(0, 150)}`, metadata });
   return Response.json({ ok: true });
 }

@@ -12,22 +12,22 @@ async function verify(request: Request) {
   const body = await readJson(request, 1024);
   const code = String(body.code ?? "").replace(/\s/g, "");
   if (!context.secretEnc) throw new HttpError(409, "Configure o autenticador primeiro.");
-  const userId = context.session.account.id;
+  const userId = context.staff.id;
   await consumeLimit("support-mfa-verify", String(userId), 5, 900, "Muitos códigos incorretos. Aguarde 15 minutos.");
   const step = await matchTotp(await decryptMfaSecret(context.secretEnc, userId), code, context.lastStep);
   if (step === null) throw new HttpError(400, "Código incorreto ou expirado.");
   const db = getSupabaseAdmin();
   // Grava o intervalo usado só se for mais novo que o último: duas chamadas com o mesmo código não passam.
-  const used = await db.from("platform_staff")
+  const used = await db.from("support_staff")
     .update({ mfa_last_step: step, ...(context.mfaEnabled ? {} : { mfa_enabled_at: new Date().toISOString() }) })
-    .eq("user_id", userId).or(`mfa_last_step.is.null,mfa_last_step.lt.${step}`).select("user_id");
+    .eq("id", userId).or(`mfa_last_step.is.null,mfa_last_step.lt.${step}`).select("id");
   dbError(used.error, "Use MFA step");
   if (!used.data?.length) throw new HttpError(400, "Código incorreto ou expirado.");
-  const session = await db.from("sessions").update({ mfa_verified_at: new Date().toISOString() }).eq("token_hash", context.tokenHash);
+  const session = await db.from("support_sessions").update({ mfa_verified_at: new Date().toISOString() }).eq("token_hash", context.tokenHash);
   dbError(session.error, "Mark session MFA");
   await refundLimit("support-mfa-verify", String(userId));
   await supportAudit(userId, context.mfaEnabled ? "mfa_verified" : "mfa_enabled");
   return Response.json({ ok: true });
 }
 
-export const POST = secureMutation(verify);
+export const POST = secureMutation(verify, { allowAssisted: true });

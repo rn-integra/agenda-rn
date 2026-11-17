@@ -10,17 +10,18 @@ export type Ticket = {
   last_message_at: string; resolved_at: string | null; created_at: string;
   assigned_staff_id: number | null; assigned_at: string | null;
 };
-export type TicketMessage = { id: number; author_user_id: number; from_support: boolean; body: string; created_at: string; author: string };
+export type TicketMessage = { id: number; author_user_id: number | null; author_staff_id: number | null; from_support: boolean; body: string; created_at: string; author: string };
 export type TicketRow = Ticket & { author: string; organization: string; assignee: string | null };
 
 const TICKET_COLUMNS = "id,organization_id,created_by,subject,category,status,context,last_message_from,last_message_at,resolved_at,created_at,assigned_staff_id,assigned_at";
 
-async function userNames(ids: number[]) {
+// Nomes de quem é da clínica (users) ou do suporte (support_staff: contas separadas).
+async function names(table: "users" | "support_staff", ids: number[]) {
   const unique = [...new Set(ids)];
   if (!unique.length) return new Map<number, string>();
-  const users = await getSupabaseAdmin().from("users").select("id,name").in("id", unique);
-  dbError(users.error, "Read ticket authors");
-  return new Map<number, string>((users.data || []).map((u: { id: number; name: string | null }) => [Number(u.id), String(u.name || "")]));
+  const rows = await getSupabaseAdmin().from(table).select("id,name").in("id", unique);
+  dbError(rows.error, "Read ticket names");
+  return new Map<number, string>((rows.data || []).map((u: { id: number; name: string | null }) => [Number(u.id), String(u.name || "")]));
 }
 
 async function organizationNames(ids: string[]) {
@@ -32,11 +33,12 @@ async function organizationNames(ids: string[]) {
 }
 
 async function withNames(tickets: Ticket[]): Promise<TicketRow[]> {
-  const [authors, orgs] = await Promise.all([
-    userNames(tickets.flatMap(t => [Number(t.created_by), ...(t.assigned_staff_id ? [Number(t.assigned_staff_id)] : [])])),
+  const [authors, staff, orgs] = await Promise.all([
+    names("users", tickets.map(t => Number(t.created_by))),
+    names("support_staff", tickets.flatMap(t => t.assigned_staff_id ? [Number(t.assigned_staff_id)] : [])),
     organizationNames(tickets.map(t => t.organization_id))]);
   return tickets.map(t => ({ ...t, author: authors.get(Number(t.created_by)) || "—", organization: orgs.get(t.organization_id) || "—",
-    assignee: t.assigned_staff_id ? authors.get(Number(t.assigned_staff_id)) || "—" : null }));
+    assignee: t.assigned_staff_id ? staff.get(Number(t.assigned_staff_id)) || "—" : null }));
 }
 
 // Quem está na clínica: a gerência vê todos os chamados da organização ativa; os demais, só os que abriram.
@@ -86,17 +88,21 @@ export async function loadTicket(id: number) {
   const ticket = await db.from("support_tickets").select(TICKET_COLUMNS).eq("id", id).maybeSingle();
   dbError(ticket.error, "Read ticket");
   if (!ticket.data) return null;
-  const messages = await db.from("support_ticket_messages").select("id,author_user_id,from_support,body,created_at")
+  const messages = await db.from("support_ticket_messages").select("id,author_user_id,author_staff_id,from_support,body,created_at")
     .eq("ticket_id", id).order("created_at", { ascending: true }).limit(500);
   dbError(messages.error, "Read ticket messages");
   const rows = (messages.data || []) as Omit<TicketMessage, "author">[];
-  const names = await userNames(rows.map(m => Number(m.author_user_id)));
-  const [row] = await withNames([ticket.data as Ticket]);
-  return { ticket: row, messages: rows.map(m => ({ ...m, author: names.get(Number(m.author_user_id)) || "—" })) };
+  const [people, staff, [row]] = await Promise.all([
+    names("users", rows.flatMap(m => m.author_user_id ? [Number(m.author_user_id)] : [])),
+    names("support_staff", rows.flatMap(m => m.author_staff_id ? [Number(m.author_staff_id)] : [])),
+    withNames([ticket.data as Ticket])]);
+  return { ticket: row, messages: rows.map(m => ({ ...m,
+    author: (m.from_support ? staff.get(Number(m.author_staff_id)) : people.get(Number(m.author_user_id))) || "—" })) };
 }
 
 // Grava uma mensagem e atualiza o chamado (quem falou por último, status). O update é condicionado
 // ao status lido antes, para duas respostas simultâneas não se sobreporem em silêncio.
+// authorId é a conta do suporte (fromSupport) ou o usuário da clínica.
 export async function addTicketMessage(ticket: Pick<Ticket, "id" | "status"> & { assigned_staff_id?: number | null }, input: { authorId: number; fromSupport: boolean; body: string | null; status: TicketStatus }) {
   const db = getSupabaseAdmin();
   const now = new Date().toISOString();
@@ -111,7 +117,8 @@ export async function addTicketMessage(ticket: Pick<Ticket, "id" | "status"> & {
   if (!updated.data?.length) throw new HttpError(409, "O chamado mudou enquanto você escrevia. Recarregue a página.");
   if (input.body) {
     const inserted = await db.from("support_ticket_messages").insert({
-      ticket_id: ticket.id, author_user_id: input.authorId, from_support: input.fromSupport, body: input.body });
+      ticket_id: ticket.id, from_support: input.fromSupport, body: input.body,
+      ...(input.fromSupport ? { author_staff_id: input.authorId } : { author_user_id: input.authorId }) });
     dbError(inserted.error, "Write ticket message");
   }
 }
