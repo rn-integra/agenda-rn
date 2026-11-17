@@ -3,6 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { PGlite } from '@electric-sql/pglite';
+import { BEFORE_SUPPORT } from './before-support.mjs';
 import { loadTs } from './load-ts.mjs';
 
 const MIGRATION = 'supabase/migrations/20261120120000_support_tickets.sql';
@@ -31,6 +32,7 @@ test('banco: chamados fechados para o navegador e mensagens só acrescentam', as
   await db.exec(`create role anon; create role authenticated; create role service_role bypassrls;
     create schema extensions; create schema vault;`);
   await db.exec(read('backups/schema/rn-integra-schema.sql').replace(/^create extension .*$/gm, ''));
+  await db.exec(BEFORE_SUPPORT);
   await db.exec(read(MIGRATION));
   await db.exec(read(MIGRATION)); // reaplicar não quebra
   await db.exec(read('supabase/migrations/20261121130000_support_ticket_assignee.sql'));

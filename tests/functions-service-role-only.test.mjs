@@ -33,7 +33,9 @@ test('a migração fecha todas as funções para PUBLIC, anon e authenticated, e
   const semServidor = await db.query(`
     select count(*)::int n from pg_proc p
     where p.pronamespace = 'public'::regnamespace and p.prokind in ('f','p')
-      and not has_function_privilege('service_role', p.oid, 'EXECUTE')`);
+      and not has_function_privilege('service_role', p.oid, 'EXECUTE')
+      -- Criar conta do suporte é só por SQL da plataforma: de propósito, nem o servidor executa.
+      and p.proname <> 'support_staff_invite'`);
   assert.equal(semServidor.rows[0].n, 0, 'toda função continua executável pelo service_role');
 
   await db.exec(`set role anon`);
