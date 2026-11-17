@@ -48,6 +48,8 @@ O repositório é público, então os logs do GitHub mostram **só contagens**. 
 
 ## 3. Recebi um alerta: o que fazer
 
+O caminho mais rápido é o console: **`/suporte/monitoramento`** mostra os incidentes abertos com o diagnóstico e o que fazer, e tem os botões **Rodar agora**, **Marcar como resolvido** e **Silenciar aviso** (1 h a 3 dias; se o problema piorar, avisa mesmo silenciado). Tudo fica no registro de atividades do suporte.
+
 1. **Leia “Diagnóstico” e “O que fazer”.** Se houver uma ação objetiva (configurar variável, ver painel), faça e aguarde o próximo ciclo de 15 minutos. O “✅ Resolvido” confirma.
 2. **Avalie se é incidente de segurança com dados.** É, se houver qualquer sinal de acesso indevido, vazamento, perda ou alteração de dados de uma clínica: alguém vendo agenda de outra organização, dados apagados sem ação do usuário, chave exposta, muitas falhas de login seguidas de um login bem-sucedido estranho.
    - **Se sim**, siga a seção 4: o prazo de 48 h começa agora.
@@ -91,6 +93,28 @@ select * from public.monitor_heartbeats;
 
 -- Encerrar manualmente um incidente já tratado
 update public.monitor_incidents set resolved_at = now() where id = <id>;
+
+-- Equipe de suporte: contas próprias (public.support_staff), separadas das contas das clínicas.
+-- Criar uma conta: devolve o token do link de primeiro acesso, de uso único, válido por 24 h.
+-- Envie à pessoa <origem>/suporte/primeiro-acesso#<token>; ela cria a senha e configura o autenticador.
+select public.support_staff_invite('pessoa@rnassessoria.com.br', 'Nome da Pessoa');
+-- Esqueceu a senha: o mesmo comando gera um link de nova senha (o autenticador continua o mesmo)
+select public.support_staff_invite('pessoa@rnassessoria.com.br');
+-- Perdeu o celular ou a chave SUPABASE_SECRET_KEY foi trocada: link novo e autenticador zerado
+select public.support_staff_invite('pessoa@rnassessoria.com.br', null, true);
+-- Tirar alguém da equipe (o acesso some na hora, inclusive sessões assistidas)
+update public.support_staff set active = false where email = 'pessoa@rnassessoria.com.br';
+delete from public.support_sessions where staff_id = (select id from public.support_staff where email = 'pessoa@rnassessoria.com.br');
+
+-- O que o suporte fez nos últimos 7 dias (no console: /suporte/registro, com filtros e CSV).
+-- O registro não aceita UPDATE, DELETE nem TRUNCATE (trava support_audit_append_only), nem pelo SQL Editor.
+select created_at, staff_id, action, organization_id, target from public.support_audit
+where created_at > now() - interval '7 days' order by created_at desc;
+
+-- Acesso assistido: liberações ativas e, em emergência, encerrar todas (derruba quem estiver dentro)
+select id, organization_id, granted_by, expires_at from public.support_access_grants where revoked_at is null and expires_at > now();
+update public.support_access_grants set revoked_at = now() where revoked_at is null;
+update public.sessions set expires_at = now() where support_grant_id is not null;
 ```
 
 ## 6. Como ensinar algo novo ao assistente

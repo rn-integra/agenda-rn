@@ -5,6 +5,10 @@ import { hashToken } from "./passwords";
 import {noServices,type DoctorServices} from "@/lib/doctor-services";
 export type Role = "general_manager" | "secretary" | "doctor";
 export const SESSION_COOKIE = "agenda_rn_session";
+// Acesso assistido do suporte (fase 5): cookie próprio, com token de outro formato (três UUIDs),
+// para nunca ser aceito como sessão comum. Enquanto valer, qualquer gravação é recusada (secureMutation).
+export const ASSIST_COOKIE = "agenda_rn_assist";
+export const ASSIST_TOKEN = /^[0-9a-f-]{110}$/;
 
 // A organização vem do vínculo ativo do usuário (um por usuário), nunca do navegador.
 // O login exige vínculo ativo com o mesmo papel, em organização ativa.
@@ -23,7 +27,8 @@ export async function hasActiveMembership(db: ReturnType<typeof getSupabaseAdmin
 
 export type Organization = { id: string; slug: string; name: string; kind?: string };
 export type Customer = { id: string; name: string; isOwner: boolean; maxOrganizations: number; organizationCount: number };
-export type Session = { account: { id: number; email: string; name: string; role: Role; doctorId: string|null }; organization: Organization; organizations: Organization[]; customer: Customer|null; services: DoctorServices; agendaIds: string[] };
+export type Assist = { staffId: number; staffName: string; grantId: number; expiresAt: string };
+export type Session = { account: { id: number; email: string; name: string; role: Role; doctorId: string|null; assist?: Assist }; organization: Organization; organizations: Organization[]; customer: Customer|null; services: DoctorServices; agendaIds: string[] };
 
 // Hash do token do cookie, ou null quando ausente/malformado (sem consulta ao banco).
 export async function sessionTokenHash(): Promise<string|null> {
@@ -34,13 +39,14 @@ export async function sessionTokenHash(): Promise<string|null> {
 
 // Normaliza o JSON de public.session_context (mesmas regras de hasActiveMembership).
 export function sessionFromContext(raw: unknown): Session|null {
-  const value = raw as { account?: Record<string, unknown>; organization?: Record<string, unknown>; organizations?: Array<Record<string, unknown>>; customer?: Record<string, unknown>; services?: DoctorServices; agendaIds?: unknown[] } | null;
+  const value = raw as { account?: Record<string, unknown>; organization?: Record<string, unknown>; organizations?: Array<Record<string, unknown>>; customer?: Record<string, unknown>; services?: DoctorServices; agendaIds?: unknown[]; assist?: Record<string, unknown> } | null;
   const account = value?.account, organization = value?.organization;
   if (!account || !["general_manager", "secretary", "doctor"].includes(String(account.role))) return null;
   if (!organization?.id) return null;
   const role = account.role as Role;
   return {
-    account: { id: Number(account.id), email: String(account.email ?? ""), name: String(account.name ?? ""), role, doctorId: (account.doctorId as string|null) ?? null },
+    account: { id: Number(account.id), email: String(account.email ?? ""), name: String(account.name ?? ""), role, doctorId: (account.doctorId as string|null) ?? null,
+      ...(value?.assist?.grantId ? { assist: { staffId: Number(value.assist.staffId), staffName: String(value.assist.staffName ?? ""), grantId: Number(value.assist.grantId), expiresAt: String(value.assist.expiresAt ?? "") } } : {}) },
     organization: { id: String(organization.id), slug: String(organization.slug ?? ""), name: String(organization.name ?? ""), kind: organization.kind ? String(organization.kind) : undefined },
     organizations: (value?.organizations || []).map(o => ({ id: String(o.id), slug: String(o.slug ?? ""), name: String(o.name ?? ""), kind: o.kind ? String(o.kind) : undefined })),
     customer: value?.customer?.id ? { id: String(value.customer.id), name: String(value.customer.name ?? ""), isOwner: value.customer.isOwner === true, maxOrganizations: Number(value.customer.maxOrganizations ?? 0), organizationCount: Number(value.customer.organizationCount ?? 0) } : null,
@@ -51,7 +57,20 @@ export function sessionFromContext(raw: unknown): Session|null {
 
 // Uma única ida ao banco: sessão válida, usuário ativo, vínculo ativo na organização do usuário,
 // serviços do médico e agendas liberadas (public.session_context).
+// Sessão assistida válida (cookie do acesso assistido + liberação ativa), ou null.
+export async function assistedSession(): Promise<Session|null> {
+  const token = (await cookies()).get(ASSIST_COOKIE)?.value;
+  if (!token || !ASSIST_TOKEN.test(token)) return null;
+  const { data, error } = await getSupabaseAdmin().rpc("assisted_session_context", { p_token_hash: await hashToken(token) });
+  dbError(error, "Read assisted session");
+  const session = sessionFromContext(data);
+  return session?.account.assist ? session : null;
+}
+
 export async function getSession(): Promise<Session|null> {
+  // Com acesso assistido em vigor, quem está no navegador vê como a gerência que liberou.
+  const assisted = await assistedSession();
+  if (assisted) return assisted;
   const tokenHash = await sessionTokenHash();
   if (!tokenHash) return null;
   const { data, error } = await getSupabaseAdmin().rpc("session_context", { p_token_hash: tokenHash });

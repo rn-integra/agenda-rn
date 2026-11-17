@@ -28,7 +28,9 @@ export function environment(): "production" | "preview" | "development" {
 // o monitoramento não pode derrubar a resposta ao usuário.
 export async function reportIncident(incident: Incident): Promise<{ alerted: boolean } | null> {
   const title = scrub(incident.title), route = incident.route ? scrub(incident.route, 200) : null;
-  const detail = incident.detail ? scrub(incident.detail, MAX_DETAIL) : null;
+  // Verificações não têm detalhe: guarda o diagnóstico e o "o que fazer" para o console do suporte mostrar.
+  const explained = [incident.diagnosis, incident.action && `O que fazer: ${incident.action}`].filter(Boolean).join(" — ");
+  const detail = incident.detail ? scrub(incident.detail, MAX_DETAIL) : explained ? scrub(explained, MAX_DETAIL) : null;
   const env = environment();
   // Erro conhecido? Leva junto o diagnóstico e o que fazer; falha passageira só avisa se insistir
   // e não é tratada como erro grave.

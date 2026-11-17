@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Building2, CalendarDays, ChevronRight, LayoutDashboard, Menu, Settings, ShieldAlert, Stethoscope, Wallet, X } from "lucide-react";
+import { Building2, CalendarDays, ChevronRight, LayoutDashboard, LifeBuoy, Menu, Settings, ShieldAlert, Stethoscope, Wallet, X } from "lucide-react";
 import OrganizationSwitcher from "@/components/organization-switcher";
 import AgendaSectionLinks from "@/components/agenda-section-menu";
 import BillingSectionLinks from "@/components/billing-section-menu";
 import HubLogout from "@/app/hub/hub-logout";
+import HelpLink from "@/components/help-link";
 import type { ModuleName } from "@/lib/navigation";
 import { attachMenuSwipe } from "@/components/menu-swipe";
 
@@ -89,6 +90,9 @@ export default function MobileNavigation({ links, active, name, role }: {
           })}
           {role === "general_manager" && <a href="/organizacao" aria-current={active === "organization" || active === "settings" ? "page" : undefined}><Settings size={20} aria-hidden="true"/><span>Configurações</span><ChevronRight size={17} aria-hidden="true"/></a>}
         </nav>}
+        <nav className="mobile-app-menu-links" aria-label="Ajuda">
+          <HelpLink onNavigate={closeMenu}><LifeBuoy size={20} aria-hidden="true"/><span>Ajuda e suporte</span><ChevronRight size={17} aria-hidden="true"/></HelpLink>
+        </nav>
         <div className="mobile-app-menu-footer"><span>Encerrar sessão</span><HubLogout/></div>
         <p className="mobile-app-legal"><a href="/termos">Termos de uso</a> · <a href="/privacidade">Privacidade</a></p>
       </div>
