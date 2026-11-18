@@ -261,6 +261,27 @@ As versões diferem porque o banco registra o momento da aplicação; ao compara
 
 **Pendências para o lançamento (lado do responsável):** `CRON_SECRET`; domínio e envio de e-mail (conta do Resend criada em 13/11/2026, com `RESEND_API_KEY` e `EMAIL_FROM` só no Preview e o remetente de teste; falta o domínio para ligar em produção com `APP_ORIGIN` e depois `PUBLIC_SIGNUP_ENABLED`); revisão jurídica de Termos/Privacidade e DPO; Supabase Pro (backups); **zerar banco e Storage** antes de abrir. **Técnico:** teste de restauração de backup; e-mail da agenda para médicos e anestesistas (agenda de amanhã às 20h do dia anterior e prévia da semana às 20h de sexta; depende do Resend); reconstrução do faturamento (M2c) com entidades recebedoras do médico; remoção de `app_state` (A2).
 
+## 6C. Console do suporte RN Integra (16–17/11/2026)
+
+**Decisão (16/11):** a plataforma precisa de uma equipe de suporte (RN Assessoria) com tela própria, acima das organizações. Restrições: fora dos papéis das clínicas, sem dados de pacientes (LGPD), toda ação registrada e 2FA obrigatório.
+
+**Em produção desde 17/11/2026:** PR #117 (`1f9d860`) e esqueleto do banco na PR #118 (`12472ff`). As 7 migrações estão nos dois bancos: `support_staff`, `monitor_snooze`, `support_tickets`, `support_assisted_access`, `support_ticket_assignee`, `support_audit_append_only` e `support_accounts`.
+
+**O que entrou:**
+- **Contas próprias do suporte** (`support_staff`, `support_sessions`, `support_setup_tokens`), separadas das clínicas: login em `/suporte/entrar`, sem organização, Hub nem agenda. A conta é criada só por SQL (`support_staff_invite`, que nem o servidor pode executar), com link de primeiro acesso de uso único (24 h, token depois do `#`). Login limitado a 5 senhas erradas a cada 15 min e 10 por dia; sessão de 12 h; 2FA TOTP a cada login.
+- **Registro** (`support_audit`): só acrescenta, com uma trava no banco para qualquer papel. Consulta com filtros e CSV em `/suporte/registro`.
+- **Monitoramento:** incidentes, rotinas, rodar agora, resolver e silenciar.
+- **Organizações:** cadastro, equipe e acessos, sem pacientes. O suporte desbloqueia login, encerra sessões e manda link de nova senha.
+- **Chamados:** botão "Ajuda" no app, fila em `/suporte/chamados` com responsável; texto com CPF é recusado.
+- **Acesso assistido:** a gerência libera por até 24 h; somente leitura, e a clínica vê o registro.
+
+**Regras novas a preservar:**
+- Conta do suporte nunca entra no app das clínicas, e conta de clínica nunca entra no console.
+- Zerar o banco antes do lançamento exige remover e recolocar a trava do `support_audit` por migração.
+- Os testes que reaplicam as migrações do suporte partem de `tests/before-support.mjs`.
+
+**Pendente:** o responsável cria a própria conta do suporte em produção pelo SQL Editor (runbook, seção 5).
+
 ## 7. Log de continuidade
 
 | Data | Alteração | Referência | Próximo passo |
@@ -301,6 +322,8 @@ As versões diferem porque o banco registra o momento da aplicação; ao compara
 | 13/11/2026 | Contas da empresa (GitHub `rn-integra`, Supabase e Vercel "RN Integra"); limpeza do repositório, README novo e esqueleto do banco por `npm run db:schema`, com restauração testada na CI; `main` protegida por ruleset | PR #111 / `397856d` / sem migration | Funções do banco fechadas |
 | 13/11/2026 | Funções do banco executáveis só pelo `service_role` (eram 20 abertas para `PUBLIC`/`anon`/`authenticated`, nenhuma perigosa), inclusive as futuras | PR #112 / `f86dd78` / migration `functions_service_role_only` (preview e produção) | Resend no Preview e e-mail da agenda |
 | 13/11/2026 | Login: bloqueio progressivo por senha errada (10 em 15 min; 20 em 24 h bloqueiam por até 24 h; redefinir a senha libera), limites por conta e geral contando só falhas, regra única para senhas novas (12+ caracteres, sem senhas comuns nem o e-mail); documentação de segurança no README | PRs #113–#114 / `435be8a` / migration `login_failure_lockout` (preview e produção) / preview testado | E-mail da agenda para médicos |
+| 16/11/2026 | Página inicial pública, login em `/entrar` e cadastro em duas etapas | PRs #115–#116 / `69d731b` | Console do suporte |
+| 17/11/2026 | Console do suporte (seção 6C): contas próprias com 2FA, registro inalterável, monitoramento, organizações, chamados e acesso assistido | PRs #117–#118 / `12472ff` / 7 migrações (preview e produção) / 752 testes / preview testado | Criar a conta do suporte em produção; upgrade de segurança do Next.js |
 
 ## 8. Protocolo para o assistente em futuros chats
 
