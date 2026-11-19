@@ -17,3 +17,8 @@ test('desktop: letras do card um ponto menores', () => {
   assert.match(css, /#calendar \.appointment \.appointment-patient\{font-size:10\.5px!important\}/);
   assert.match(css, /#calendar \.appointment \.appointment-procedure\{font-size:9\.5px!important\}/);
 });
+
+test('cards altos: procedimento e equipe ficam no fim do card', () => {
+  assert.match(css, /#calendar \.appointment\{grid-template-rows:auto auto minmax\(0,1fr\) auto auto!important;align-content:stretch!important\}/);
+  assert.match(css, /#calendar \.appointment \.appointment-surgeon,#calendar \.appointment \.appointment-value\{grid-row:5!important\}/);
+});

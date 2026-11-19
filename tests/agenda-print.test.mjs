@@ -112,5 +112,5 @@ test('tela: secretária informa o valor; card e detalhe mostram (médico só lê
  assert.match(js,/guideExpiry:\$\("guideExpiry"\)\.value,procedureValue:newProcedureValue,/);
  assert.match(js,/id="detailProcedureValue"[^>]*\$\{canAdmin\?"":"disabled"\}>/);
  assert.match(js,/if\(canEditStatus\)\{try\{procedureValue=procedureValueInput\("detailProcedureValue"\)\}/);
- assert.match(js,/a\.procedureValue!=null\?` · <b class="appointment-value">\$\{esc\(money\(a\.procedureValue\)\)\}<\/b>`:""/);
+ assert.match(js,/a\.procedureValue!=null\?`<span class="appointment-value">\$\{esc\(money\(a\.procedureValue\)\)\}<\/span>`:""/);
 });

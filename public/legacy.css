@@ -901,6 +901,10 @@ body.billing-paused .native-finance,body.billing-paused #nativeFinance,body.bill
 #calendar .appointment .appointment-value{grid-column:2;grid-row:4;justify-self:end;max-width:76px;font-size:9px!important;font-weight:800;color:#1f6f4f;font-variant-numeric:tabular-nums}
 #calendar .appointment.is-wide .appointment-value,#calendar .appointment.is-split .appointment-value{max-width:100%}
 #calendar .appointment:has(.appointment-value) .appointment-surgeon{grid-column:1}
+/* Cards altos: procedimento e equipe acompanham o fim do card (a linha 3 vazia absorve a sobra). */
+#calendar .appointment{grid-template-rows:auto auto minmax(0,1fr) auto auto!important;align-content:stretch!important}
+#calendar .appointment .appointment-procedure,#calendar .appointment .appointment-hospital{grid-row:4!important}
+#calendar .appointment .appointment-surgeon,#calendar .appointment .appointment-value{grid-row:5!important}
 
 /* Lista mobile: mesmo cabeçalho (horário · hospital) e equipe vazia discreta. */
 .mobile-appointment-content .appointment-head{display:flex!important;align-items:baseline;gap:6px;min-width:0}
