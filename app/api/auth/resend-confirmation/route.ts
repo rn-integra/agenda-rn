@@ -19,4 +19,4 @@ async function resend(request: Request) {
   if (result.data) await sendMail(emails.confirm(parsed.data.email, "", `${appOrigin(request)}/confirmar-email?token=${token}`)).catch(error => console.error("[email:confirm]", error instanceof Error ? error.message : error));
   return done();
 }
-export const POST = secureMutation(resend);
+export const POST = secureMutation(resend, { blockTrapped: true });

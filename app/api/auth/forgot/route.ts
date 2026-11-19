@@ -22,4 +22,4 @@ async function forgot(request: Request) {
   if (user) await sendMail(emails.reset(user.email, user.name || "", `${appOrigin(request)}/redefinir-senha?token=${token}`)).catch(error => console.error("[email:reset]", error instanceof Error ? error.message : error));
   return done();
 }
-export const POST = secureMutation(forgot);
+export const POST = secureMutation(forgot, { blockTrapped: true });

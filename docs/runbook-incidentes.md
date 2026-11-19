@@ -46,6 +46,8 @@ Para testar: GitHub → Actions → **Monitor RN Integra** → *Run workflow*. O
 
 O repositório é público, então os logs do GitHub mostram **só contagens**. Os detalhes ficam no alerta e no banco.
 
+**Sem `ALERT_WEBHOOK_URL` nem `ALERT_EMAIL`, nada sai do console:** incidentes e armadilhas só aparecem em `/suporte/monitoramento`, que mostra um aviso amarelo enquanto nenhum canal estiver configurado. O mais simples é um webhook do Discord (canal → Editar canal → Integrações → Webhooks → Copiar URL) em `ALERT_WEBHOOK_URL`, na Vercel, ambiente de produção.
+
 ## 3. Recebi um alerta: o que fazer
 
 O caminho mais rápido é o console: **`/suporte/monitoramento`** mostra os incidentes abertos com o diagnóstico e o que fazer, e tem os botões **Rodar agora**, **Marcar como resolvido** e **Silenciar aviso** (1 h a 3 dias; se o problema piorar, avisa mesmo silenciado). Tudo fica no registro de atividades do suporte.
@@ -58,7 +60,8 @@ O caminho mais rápido é o console: **`/suporte/monitoramento`** mostra os inci
    2. No Supabase, confira se o projeto não está pausado nem acima do limite do plano.
    3. Na Vercel, confira se o último deploy está “Ready”. Se o problema começou num deploy, use **Instant Rollback** para o anterior.
 4. **“Precisa de um dev”:** passe ao dev o título do alerta, o horário e a rota. O dev encontra os detalhes na tabela `monitor_incidents` (seção 5) e no log da Vercel.
-5. **Depois de resolver um erro novo:** o dev cadastra o padrão em `lib/monitor/playbook.ts` com diagnóstico e ação. Assim, da próxima vez, o monitor já explica o erro sozinho.
+5. **“Armadilha: acesso a caminho-isca” ou “Armadilha: a chave falsa foi usada”:** um robô ou IA procurou brechas. Não há o que corrigir; em **Monitoramento → Armadilhas** aparece o IP (só o resumo), quantas vezes, o último caminho e o navegador declarado. O IP fica bloqueado 24 h nas telas de entrada. Se for uma clínica (alguém ligando dizendo “acesso bloqueado temporariamente por segurança”), use **Desbloquear**. Se o mesmo IP insistir por dias, bloqueie no firewall da Vercel.
+6. **Depois de resolver um erro novo:** o dev cadastra o padrão em `lib/monitor/playbook.ts` com diagnóstico e ação. Assim, da próxima vez, o monitor já explica o erro sozinho.
 
 ## 4. Incidente de segurança com dados (LGPD)
 

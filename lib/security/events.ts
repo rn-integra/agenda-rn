@@ -3,7 +3,7 @@ import { createHash, createHmac } from "node:crypto";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { clientIp } from "./client";
 
-export type SecurityEventKind = "login_success" | "login_failure" | "login_unverified" | "password_reset" | "invite_accepted" | "organization_switch";
+export type SecurityEventKind = "login_success" | "login_failure" | "login_unverified" | "password_reset" | "invite_accepted" | "organization_switch" | "trap_triggered" | "canary_key_used";
 
 // IP e e-mail nunca são gravados em claro: só um resumo (HMAC/SHA-256) para correlacionar tentativas.
 export function hashIp(request: Request) {

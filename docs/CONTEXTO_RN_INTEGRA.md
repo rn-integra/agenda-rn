@@ -282,6 +282,14 @@ As versões diferem porque o banco registra o momento da aplicação; ao compara
 
 **Conta do responsável:** criada em produção, com senha e 2FA (19/11/2026).
 
+## 6D. Armadilhas para robôs e IAs (19/11/2026)
+
+**Decisão (19/11):** detectar quem explora o sistema antes que ache uma brecha. Iscas que nenhuma pessoa usa: caminhos inexistentes (`/.env`, `/wp-admin`, `/painel-interno`, `/api/internal`…), link oculto no login e chave falsa no `robots.txt`, junto com o aviso de que o sistema é médico e registrado.
+
+**Como funciona:** o proxy reescreve as iscas para `/api/security/trap` (404 comum), que grava `security_events` (`trap_triggered`, `canary_key_used`, migração `security_traps`) e abre incidente no monitor. 3 caminhos-isca em 24 h ou 1 uso da chave bloqueiam o IP (pelo resumo) por 24 h só nas telas de entrada. O console lista e desbloqueia em **Monitoramento → Armadilhas**, e avisa em amarelo enquanto nenhum canal de alerta estiver configurado.
+
+**Regra a preservar:** nenhuma rota nova do app pode cair num caminho-isca (`lib/security/trap-paths.ts`).
+
 ## 7. Log de continuidade
 
 | Data | Alteração | Referência | Próximo passo |

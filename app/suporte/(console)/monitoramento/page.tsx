@@ -2,6 +2,9 @@ import { requireSupportPage } from "@/lib/support/staff";
 import { HEARTBEAT_LIMITS, heartbeatLate, loadMonitor, playbookFor, type IncidentRow } from "@/lib/support/monitor";
 import { Banner, Card, Empty, PageHeader, SeverityBadge, Stat, ago, dateTime } from "../ui";
 import { IncidentActions, RunMonitorButton } from "./actions";
+import { TrapUnlockButton } from "./trap-actions";
+import { alertChannels } from "@/lib/monitor/alert";
+import { loadTraps } from "@/lib/support/traps";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Monitoramento — Suporte RN Integra", robots: { index: false, follow: false } };
@@ -22,7 +25,8 @@ function Explanation({ incident }: { incident: IncidentRow }) {
 // Aba de monitoramento: o que o assistente do monitor encontrou, corrigiu e o que ainda precisa de alguém.
 export default async function MonitorPage() {
   await requireSupportPage();
-  const data = await loadMonitor();
+  const [data, traps] = await Promise.all([loadMonitor(), loadTraps()]);
+  const channels = alertChannels();
   const now = data.now;
   const max = Math.max(1, ...data.daily.map(d => d.count));
   const repairedCount = data.repaired.length;
@@ -33,6 +37,10 @@ export default async function MonitorPage() {
     </PageHeader>
 
     <Banner tone={data.status.tone} title={data.status.label}>{data.status.text}</Banner>
+    {channels.length === 0 && <div className="mt-3"><Banner tone="warning" title="Os avisos não saem deste painel">
+      Nenhum canal de aviso configurado: incidentes e armadilhas só aparecem aqui, para quem abrir o console. Para receber no
+      celular, configure na Vercel (produção) ALERT_WEBHOOK_URL (Discord ou Slack) ou ALERT_EMAIL.
+    </Banner></div>}
 
     <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       {Object.entries(HEARTBEAT_LIMITS).map(([name, limit]) => {
@@ -75,6 +83,23 @@ export default async function MonitorPage() {
           })}
         </ul>}
     </section>
+
+    <Card title="Armadilhas (últimas 24 h)" text="Robôs e IAs que procuraram caminhos-isca ou usaram a chave falsa. 3 caminhos-isca ou 1 uso da chave bloqueiam o IP por 24 h nas telas de entrada." className="mt-6">
+      {traps.length === 0 ? <Empty>Ninguém caiu nas armadilhas nas últimas 24 h.</Empty> :
+        <ul className="divide-y divide-slate-100">{traps.map(t => <li key={t.ipHash} className="flex items-start justify-between gap-3 py-2.5 text-sm first:pt-0 last:pb-0">
+          <span className="min-w-0">
+            <span className="flex flex-wrap items-center gap-2">
+              <span className="font-mono text-xs text-slate-700">IP {t.ipHash.slice(0, 8)}…</span>
+              {t.canary && <SeverityBadge severity="critical" />}
+              {t.blocked ? <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700">Bloqueado{t.until ? ` até ${dateTime.format(new Date(t.until))}` : ""}</span>
+                : <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">Não bloqueado</span>}
+            </span>
+            <span className="mt-0.5 block truncate text-slate-600">{t.hits}× · último: <span className="font-mono text-xs">{t.lastPath || "—"}</span> · {ago(t.lastAt, now)}</span>
+            {t.lastAgent && <span className="block truncate text-xs text-slate-400">{t.lastAgent}</span>}
+          </span>
+          {t.blocked && <TrapUnlockButton ipHash={t.ipHash} />}
+        </li>)}</ul>}
+    </Card>
 
     <div className="mt-6 grid gap-6 lg:grid-cols-2">
       <Card title="Corrigido automaticamente" text="O monitor resolveu sozinho e conferiu que funcionou.">

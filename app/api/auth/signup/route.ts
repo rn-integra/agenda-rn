@@ -49,4 +49,4 @@ async function signup(request: Request) {
   await sendMail(emails.confirm(data.email, data.name, `${origin}/confirmar-email?token=${token}`));
   return done();
 }
-export const POST = secureMutation(signup);
+export const POST = secureMutation(signup, { blockTrapped: true });

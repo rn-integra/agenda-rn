@@ -162,7 +162,7 @@ test('conta do suporte: cookie e token próprios, sem organização, Hub ou agen
   const setup = read('app/api/support/auth/setup/route.ts');
   assert.match(setup, /rpc\("support_staff_setup"/);
   assert.match(setup, /supportAudit\(staffId, "password_set"\)/);
-  for (const route of ['login', 'setup', 'logout']) assert.match(read(`app/api/support/auth/${route}/route.ts`), /secureMutation\(\w+, \{ allowAssisted: true \}\)/, route);
+  for (const route of ['login', 'setup', 'logout']) assert.match(read(`app/api/support/auth/${route}/route.ts`), /secureMutation\(\w+, \{ allowAssisted: true(?:, blockTrapped: true)? \}\)/, route);
   const login = read('app/api/support/auth/login/route.ts');
   assert.ok(!login.includes('from("users")'), 'conta de clínica não entra no console');
 });

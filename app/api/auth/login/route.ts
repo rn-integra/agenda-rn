@@ -54,4 +54,4 @@ async function login(request: Request) {
   await recordSecurityEvent("login_success", request, { actorId: Number(account.id) });
   return Response.json({ ok: true, next: organizations > 1 ? "/organizacoes" : "/" });
 }
-export const POST = secureMutation(login);
+export const POST = secureMutation(login, { blockTrapped: true });

@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { randomBytes } from 'node:crypto';
 import { BILLING_PAUSED, BILLING_PAUSED_MESSAGE, billingPausedResponse, isBillingPath } from './lib/billing-paused';
+import { TRAP_HEADER, TRAP_ROUTE, carriesCanary, isTrapPath } from './lib/security/trap-paths';
 
 export function proxy(request: NextRequest) {
+  // Armadilhas: caminho-isca ou chave falsa vão para a rota-isca, que registra, avisa e responde 404.
+  const caught = carriesCanary(request.headers, request.nextUrl.search) ? 'canary' : isTrapPath(request.nextUrl.pathname) ? 'trap' : null;
+  if (caught) {
+    const trapHeaders = new Headers(request.headers);
+    trapHeaders.set(TRAP_HEADER, `${caught}:${request.nextUrl.pathname}`);
+    return NextResponse.rewrite(new URL(TRAP_ROUTE, request.url), { request: { headers: trapHeaders } });
+  }
   if (BILLING_PAUSED && isBillingPath(request.nextUrl.pathname)) {
     if (request.nextUrl.pathname.startsWith('/api/')) return billingPausedResponse();
     return new NextResponse(`<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>RN Integra</title><body style="font-family:system-ui,sans-serif;margin:0;display:grid;place-items:center;min-height:100vh;background:#f6f7f9;color:#1f2937"><main style="max-width:28rem;padding:1.5rem;text-align:center"><h1 style="font-size:1.25rem">${BILLING_PAUSED_MESSAGE}</h1><p>O módulo de faturamento está temporariamente indisponível enquanto é reconstruído. A agenda segue funcionando.</p><p><a href="/dashboard?agenda=1">Voltar para a agenda</a></p></main></body></html>`, { status: 503, headers: { 'content-type': 'text/html; charset=utf-8', 'Cache-Control': 'private, no-store' } });

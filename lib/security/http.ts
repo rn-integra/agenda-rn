@@ -56,10 +56,12 @@ async function rejectAssisted(request: Request) {
   if (await assistedSession()) throw new HttpError(403, 'Acesso assistido do suporte é somente leitura.');
 }
 
-export function secureMutation(handler: (request: Request) => Promise<Response>, options: { allowAssisted?: boolean } = {}) {
+// blockTrapped: telas de entrada (login, cadastro, senha, convite) recusam IP preso numa armadilha (lib/security/traps.ts).
+export function secureMutation(handler: (request: Request) => Promise<Response>, options: { allowAssisted?: boolean; blockTrapped?: boolean } = {}) {
   return async (request: Request) => {
     try {
       checkMutationOrigin(request);
+      if (options.blockTrapped) await (await import('@/lib/security/traps')).rejectTrapped(request);
       if (!options.allowAssisted) await rejectAssisted(request);
       const response = await handler(request);
       response.headers.set('Cache-Control', 'private, no-store');
