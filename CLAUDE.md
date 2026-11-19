@@ -57,7 +57,6 @@ Sistema de agendas médicas multiorganização (clínicas). Papéis: `general_ma
   - preencher os dados jurídicos em `lib/legal.ts` e passar pela revisão de um advogado;
   - domínio para o Resend: a conta existe e `RESEND_API_KEY` e `EMAIL_FROM` estão **só no Preview**, com o remetente de teste `onboarding@resend.dev` (entrega só no e-mail da conta do Resend); com o domínio, configurar produção (`RESEND_API_KEY`, `EMAIL_FROM`, `APP_ORIGIN`, depois `PUBLIC_SIGNUP_ENABLED`);
   - planos Vercel Pro e Supabase Pro;
-  - criar a própria conta do suporte em produção: `select public.support_staff_invite(email, nome)` no SQL Editor e abrir `https://agenda-rn.vercel.app/suporte/primeiro-acesso#<token>`;
   - configurar o monitor (`MONITOR_URL` e `CRON_SECRET` no GitHub; `ALERT_WEBHOOK_URL` ou `ALERT_EMAIL` na Vercel);
   - zerar banco e Storage antes de abrir;
   - antes de abrir, **remover `SIGNUP_SKIP_EMAIL_VERIFICATION`** da Vercel (hoje o cadastro está ligado em produção e preview sem confirmação de e-mail, para testes).
