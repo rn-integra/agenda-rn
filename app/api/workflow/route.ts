@@ -28,8 +28,12 @@ function requestDescription(state: AgendaState, actor: string, action: string, p
   if (action === "update") return `${actor} sugeriu alterar ${patient} para ${a?.date || "—"} às ${a?.time || "—"}.`;
   return `${actor} sugeriu agendar ${patient} para ${a?.date || "—"} às ${a?.time || "—"}.`;
 }
+// Conflito é o mesmo profissional (médico ou anestesista) no mesmo horário; vazio não conta como profissional.
+function professionals(a: Appointment) { return [a.doctorId, a.anesthetistId].filter(Boolean).map(String); }
 function overlaps(a: Appointment, b: Appointment) {
-  if (a.id === b.id || a.status === "cancelled" || b.status === "cancelled" || a.doctorId !== b.doctorId || a.date !== b.date) return false;
+  if (a.id === b.id || a.status === "cancelled" || b.status === "cancelled" || a.date !== b.date) return false;
+  const others = professionals(b);
+  if (!professionals(a).some(id => others.includes(id))) return false;
   const toMinutes = (value: unknown) => { const [h, m] = String(value || "00:00").split(":").map(Number); return h * 60 + m; };
   const aStart = toMinutes(a.time), bStart = toMinutes(b.time);
   return aStart < bStart + Number(b.duration || 60) && aStart + Number(a.duration || 60) > bStart;
@@ -153,7 +157,8 @@ async function handlePATCH(request: Request) {
     if (!canReadAppointment(session,proposed) || (previous && (proposed.id!==previous.id || proposed.doctorId!==previous.doctorId || proposed.anesthetistId!==previous.anesthetistId || proposed.patientId!==previous.patientId))) return Response.json({error:"Vínculo da solicitação inválido"},{status:403});
     if (row.action==="create" && [...current,...(state.cancelledAppointments || [])].some(a=>a.id===proposed.id)) return Response.json({error:"Identificador já utilizado"},{status:409});
     if (row.action !== "create" && !current.some((a) => a.id === row.appointment_id)) return Response.json({ error: "O agendamento original já foi alterado. Negue a solicitação e peça uma nova sugestão." }, { status: 409 });
-    if (proposed && current.some((a) => overlaps(proposed, a))) return Response.json({ error: "O horário ficou indisponível. A solicitação não foi aplicada." }, { status: 409 });
+    // Desagendar só libera o horário: não há conflito novo a conferir (e o atendimento pode estar justamente em conflito).
+    if (row.action !== "delete" && proposed && current.some((a) => overlaps(proposed, a))) return Response.json({ error: "O horário ficou indisponível. A solicitação não foi aplicada." }, { status: 409 });
     if (row.action === "delete") {
       const archived = { ...(previous || proposed!), ...(proposed || {}), cancelledAt: String(proposed?.cancelledAt || now), cancelReason: String(proposed?.cancelReason || "Não informado") };
       state.appointments = current.filter((a) => a.id !== row.appointment_id);

@@ -17,11 +17,11 @@ async function login(request: Request) {
   const email = data.email.trim().toLowerCase(), password = data.password;
   // Toda recusa após a validação básica fica registrada (só o resumo do e-mail, nunca o endereço).
   const invalid = async () => { await recordSecurityEvent("login_failure", request, { target: hashEmail(email) }); return refuse(); };
-  // Por IP conta toda tentativa (a Vercel controla esse cabeçalho); os limites por conta e o geral contam só falhas.
+  // Por IP conta toda tentativa (a Vercel controla esse cabeçalho); os limites por conta contam só falhas.
+  // Não há limite geral: ele deixava um ataque distribuído travar o login de todas as clínicas.
   if (process.env.VERCEL === "1") await consumeLimit("login-ip", request.headers.get("x-vercel-forwarded-for") || "unknown", 30, 300);
-  await consumeLimit("login-failures-global", "all", 600, 60);
   for (const { scope, limit, seconds } of LOGIN_FAILURE_LIMITS) await consumeLimit(scope, email, limit, seconds, scope === "login-account-day" ? LOCK_MESSAGE : undefined);
-  const refundAttempt = () => Promise.all([refundLimit("login-failures-global", "all"), ...LOGIN_FAILURE_LIMITS.map(({ scope }) => refundLimit(scope, email))]);
+  const refundAttempt = () => Promise.all(LOGIN_FAILURE_LIMITS.map(({ scope }) => refundLimit(scope, email)));
   const db = getSupabaseAdmin();
   const found = await db.from("users").select("id,role,active,password_hash,password_salt,email_verified_at").eq("email", email).maybeSingle();
   dbError(found.error, "Read account"); const account = found.data;
