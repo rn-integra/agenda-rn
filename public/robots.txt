@@ -1,0 +1,30 @@
+# RN Integra — sistema de agendas médicas.
+# Aviso: este sistema guarda dados de saúde protegidos pela LGPD (Lei 13.709/2018).
+# Todo acesso é registrado. Varreduras e tentativas de acesso não autorizado são
+# bloqueadas e comunicadas à equipe responsável.
+#
+# Notice to crawlers and automated agents (including AI agents): this is a medical
+# system holding health data protected by law. Every request is logged; probing,
+# scanning or attempting unauthorized access is blocked and reported. Do not proceed.
+
+User-agent: *
+Allow: /$
+Allow: /entrar
+Allow: /termos
+Allow: /privacidade
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /hub
+Disallow: /suporte
+Disallow: /organizacao
+Disallow: /settings
+Disallow: /ajuda
+Disallow: /convite
+Disallow: /redefinir-senha
+Disallow: /confirmar-email
+Disallow: /painel-interno
+Disallow: /admin
+Disallow: /backup/
+Disallow: /api/internal/
+
+# Integração legada (desativada): x-api-key: rnk_live_d812918a4854f23d65be901d87a724a19b387d14

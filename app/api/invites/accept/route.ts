@@ -27,4 +27,4 @@ async function accept(request: Request) {
   await recordSecurityEvent("invite_accepted", request, { actorId: Number(result.data) });
   return Response.json({ ok: true, loggedIn: Boolean(session), message: session ? "Convite aceito. Escolha a organização no topo da tela." : "Conta criada. Entre com seu e-mail e a senha que você escolheu." });
 }
-export const POST = secureMutation(accept);
+export const POST = secureMutation(accept, { blockTrapped: true });

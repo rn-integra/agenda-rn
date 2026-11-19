@@ -24,4 +24,4 @@ async function reset(request: Request) {
   if (email) await Promise.all(LOGIN_FAILURE_LIMITS.map(({ scope }) => clearLimit(scope, email)));
   return Response.json({ ok: true, message: "Senha alterada. Entre com a nova senha." });
 }
-export const POST = secureMutation(reset);
+export const POST = secureMutation(reset, { blockTrapped: true });

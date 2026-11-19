@@ -29,4 +29,4 @@ async function login(request: Request) {
 }
 
 // Rotas de conta do suporte não mexem em dados de clínica: valem mesmo com acesso assistido aberto.
-export const POST = secureMutation(login, { allowAssisted: true });
+export const POST = secureMutation(login, { allowAssisted: true, blockTrapped: true });

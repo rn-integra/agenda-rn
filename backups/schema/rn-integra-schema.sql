@@ -1,6 +1,6 @@
 -- RN Integra: esqueleto do banco (esquema public, só estrutura, sem dados).
--- Projeto: nagddicinjszfrtwgjbu (production). Gerado em 2026-11-17T16:40:33.703Z por npm run db:schema.
--- Conteúdo: tabelas 62 | funções 158 | gatilhos 93 | restrições 463 | índices 204 | políticas RLS 0 | migrações 91 | última 20261117163940
+-- Projeto: nagddicinjszfrtwgjbu (production). Gerado em 2026-11-19T14:42:40.254Z por npm run db:schema.
+-- Conteúdo: tabelas 62 | funções 158 | gatilhos 93 | restrições 463 | índices 205 | políticas RLS 0 | migrações 92 | última 20261119144232
 -- NÃO executar no banco atual: serve para recriar a estrutura num projeto Supabase novo e vazio.
 
 set check_function_bodies = false;
@@ -5510,7 +5510,7 @@ alter table only public.scheduling_rules add constraint scheduling_rules_occurre
 
 alter table only public.scheduling_rules add constraint scheduling_rules_weekday_check CHECK (((weekday >= 0) AND (weekday <= 6)));
 
-alter table only public.security_events add constraint security_events_kind_check CHECK ((kind = ANY (ARRAY['login_success'::text, 'login_failure'::text, 'login_unverified'::text, 'password_reset'::text, 'invite_accepted'::text, 'organization_switch'::text, 'patient_export'::text, 'patient_anonymized'::text])));
+alter table only public.security_events add constraint security_events_kind_check CHECK ((kind = ANY (ARRAY['login_success'::text, 'login_failure'::text, 'login_unverified'::text, 'password_reset'::text, 'invite_accepted'::text, 'organization_switch'::text, 'patient_export'::text, 'patient_anonymized'::text, 'trap_triggered'::text, 'canary_key_used'::text])));
 
 alter table only public.security_rate_limits add constraint security_rate_limits_key_check CHECK ((length(key) = 64));
 
@@ -5743,6 +5743,8 @@ CREATE INDEX schedule_blocks_day_idx ON public.schedule_blocks USING btree (orga
 CREATE INDEX security_events_created_idx ON public.security_events USING btree (created_at);
 
 CREATE INDEX security_events_org_created_idx ON public.security_events USING btree (organization_id, created_at DESC);
+
+CREATE INDEX security_events_trap_idx ON public.security_events USING btree (created_at DESC) WHERE (kind = ANY (ARRAY['trap_triggered'::text, 'canary_key_used'::text]));
 
 CREATE INDEX security_rate_limits_expiry ON public.security_rate_limits USING btree (expires_at);
 

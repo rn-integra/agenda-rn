@@ -29,4 +29,4 @@ async function setup(request: Request) {
   return Response.json({ ok: true, next: "/suporte/verificar" });
 }
 
-export const POST = secureMutation(setup, { allowAssisted: true });
+export const POST = secureMutation(setup, { allowAssisted: true, blockTrapped: true });

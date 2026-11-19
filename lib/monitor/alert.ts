@@ -23,6 +23,14 @@ export function alertText(alert: Alert) {
   return lines.join("\n").slice(0, 1800);
 }
 
+// Canais de aviso configurados (o console do suporte avisa quando não há nenhum).
+export function alertChannels(): string[] {
+  const channels: string[] = [];
+  if (process.env.ALERT_WEBHOOK_URL?.startsWith("https://")) channels.push("webhook");
+  if (process.env.ALERT_EMAIL && emailConfigured()) channels.push("email");
+  return channels;
+}
+
 export async function sendAlert(alert: Alert): Promise<string[]> {
   const text = alertText(alert), used: string[] = [];
   const webhook = process.env.ALERT_WEBHOOK_URL;

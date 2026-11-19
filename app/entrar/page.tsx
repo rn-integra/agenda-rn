@@ -23,6 +23,8 @@ export default async function EntrarPage() {
       <h2 className="text-2xl font-semibold tracking-tight text-slate-900">Entre na sua conta</h2>
       <p className="mt-2 text-sm leading-6 text-slate-600">Use seu e-mail e senha do RN Integra.</p>
       <LoginForm />
+      {/* Isca para robôs: invisível para pessoas e leitores de tela; quem segue o link cai numa armadilha (lib/security/trap-paths.ts). */}
+      <a href="/painel-interno" hidden aria-hidden="true" tabIndex={-1} rel="nofollow">Painel interno</a>
       <div className="mt-5 flex flex-wrap items-center justify-between gap-2 text-sm"><a href="/esqueci-senha" className="text-[#12857f] underline">Esqueci minha senha</a>{publicSignupEnabled()&&<a href="/cadastro" className="text-[#12857f] underline">Criar conta</a>}</div>
       <p className="mt-6 flex justify-center gap-2 text-xs text-slate-500"><a href="/termos" className="underline hover:text-[#12857f]">Termos de uso</a><span aria-hidden="true">·</span><a href="/privacidade" className="underline hover:text-[#12857f]">Política de privacidade</a></p>
     </section>
