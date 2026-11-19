@@ -303,7 +303,9 @@ label{font-size:13px}select,input,textarea{min-height:42px;font-size:14px}.conte
  .mobile-appointment-content .appointment-card-footer{display:contents}
  .mobile-appointment-content .appointment-insurance{grid-column:2;grid-row:3;text-align:right;justify-self:end;margin:0;font-size:12px!important;line-height:1.35}
  .mobile-appointment-content .appointment-status-badge{grid-column:2;grid-row:4;justify-self:end;align-self:start;margin:0!important;max-width:100%;width:auto;text-align:right}
+ .mobile-appointment-content .appointment-value{grid-column:2;grid-row:5;justify-self:end;margin:0;font-size:12px!important;line-height:1.35}
 }
+.mobile-appointment-content .appointment-value{font-weight:800;color:#1f6f4f;font-variant-numeric:tabular-nums}
 .surgery-documents{margin:20px 0;padding:18px;border:1px solid #dce8ec;border-radius:16px;min-width:0}.surgery-documents h4{margin:0 0 14px}.document-upload{display:flex;gap:12px;align-items:end;flex-wrap:wrap}.document-upload label{display:flex;flex-direction:column;gap:6px;min-width:0;flex:1}.document-upload input{max-width:100%}.surgery-documents progress{width:100%;margin-top:12px}.surgery-document{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #e6eef1}.surgery-document>div{min-width:0}.surgery-document strong{display:block;overflow-wrap:anywhere}.surgery-document small{display:block;color:#687787;margin-top:4px}.surgery-document nav{display:flex;gap:14px;flex-shrink:0}.surgery-document a{color:#078c91;font-weight:600}.surgery-documents [data-message]{font-size:14px}.surgery-documents h5{margin:18px 0 4px}@media(max-width:600px){.document-upload{display:grid;grid-template-columns:1fr}.surgery-document{align-items:flex-start;flex-direction:column}.surgery-documents{padding:12px}}
 
 /* Global modules and operational areas are separate navigation levels. */
@@ -888,6 +890,17 @@ body.billing-paused .native-finance,body.billing-paused #nativeFinance,body.bill
 /* Selo "!" de pendência: fora do canto superior direito, com a animação original. */
 #calendar .appointment.has-pending{z-index:5}
 #calendar .appointment.has-pending .appointment-status-badge{margin-right:8px!important}
+/* Desktop: letras um ponto menores para o card não ficar espremido (19/11/2026). */
+#calendar .appointment .appointment-head b{font-size:9.5px!important}
+#calendar .appointment .appointment-patient{font-size:10.5px!important}
+#calendar .appointment .appointment-procedure{font-size:9.5px!important}
+#calendar .appointment .appointment-insurance,#calendar .appointment .appointment-surgeon{font-size:9px!important}
+#calendar .appointment .appointment-hospital{font-size:8.5px!important}
+#calendar .appointment .appointment-status-badge{font-size:7.5px!important}
+/* Valor do procedimento (quando informado): célula própria, à direita da equipe, sem ser cortado pelo convênio. */
+#calendar .appointment .appointment-value{grid-column:2;grid-row:4;justify-self:end;max-width:76px;font-size:9px!important;font-weight:800;color:#1f6f4f;font-variant-numeric:tabular-nums}
+#calendar .appointment.is-wide .appointment-value,#calendar .appointment.is-split .appointment-value{max-width:100%}
+#calendar .appointment:has(.appointment-value) .appointment-surgeon{grid-column:1}
 
 /* Lista mobile: mesmo cabeçalho (horário · hospital) e equipe vazia discreta. */
 .mobile-appointment-content .appointment-head{display:flex!important;align-items:baseline;gap:6px;min-width:0}
