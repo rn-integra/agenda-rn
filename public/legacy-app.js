@@ -607,14 +607,14 @@ function appointmentCardContent(a,owner=selectedProf()){
  <span class="appointment-patient">${esc(p?.name||"Paciente não informado")}</span>
  <span class="appointment-procedure">${esc(a.procedure||"Procedimento")}</span>
  <span class="appointment-surgeon${partner?"":" is-empty"}">${esc(team)}</span>
- <span class="appointment-card-footer"><span class="appointment-insurance">${esc(appointmentInsurance(a)||"Sem convênio")}${a.procedureValue!=null?` · <b class="appointment-value">${esc(money(a.procedureValue))}</b>`:""}</span><span class="appointment-status-badge ${esc(a.status)}">${esc(statusLabel(a.status))}</span></span>`;
+ <span class="appointment-card-footer"><span class="appointment-insurance">${esc(appointmentInsurance(a)||"Sem convênio")}</span>${a.procedureValue!=null?`<span class="appointment-value">${esc(money(a.procedureValue))}</span>`:""}<span class="appointment-status-badge ${esc(a.status)}">${esc(statusLabel(a.status))}</span></span>`;
 }
 function appointmentCard(a,hour,extra,conflict){
  const duration=Number(a.duration||0),top=Math.max(3,((mins(a.time)-hour)/60)*HOUR_HEIGHT+3),height=Math.max(36,(duration/60)*HOUR_HEIGHT-6);
  const badge=typeof appointmentPendingBadge==="function"?appointmentPendingBadge(a):"";
  // A altura do cartão define quanto conteúdo cabe; o resumo completo fica no title.
  const size=height<40?"size-xs":height<50?"size-s":height<80?"size-m":"size-l",split=/width:calc\(/.test(extra||"")?"is-split":calendarMode==="day"?"is-wide":"";
- const summary=[`${a.time} – ${hhmm(mins(a.time)+duration)}`,patient(a.patientId)?.name||"Paciente não informado",a.procedure||"Procedimento",hospital(a.hospitalId)?.name,appointmentPartner(a),appointmentInsurance(a)||"Sem convênio",statusLabel(a.status)].filter(Boolean).join(" · ");
+ const summary=[`${a.time} – ${hhmm(mins(a.time)+duration)}`,patient(a.patientId)?.name||"Paciente não informado",a.procedure||"Procedimento",hospital(a.hospitalId)?.name,appointmentPartner(a),appointmentInsurance(a)||"Sem convênio",a.procedureValue!=null?money(a.procedureValue):"",statusLabel(a.status)].filter(Boolean).join(" · ");
  return `<button class="appointment ${a.status} ${size} ${split} ${conflict?"anesthesia-conflict":""} ${badge?"has-pending":""}" data-id="${esc(a.id)}" title="${esc(summary)}" aria-label="${esc(summary)}" style="top:${top}px;height:${height}px;background:${isAnesthesiologist(selectedProf())?surgeonColor(a.doctorId):""};${extra}">${badge}${appointmentCardContent(a)}</button>`;
 }
 function renderPatients(){
