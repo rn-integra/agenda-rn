@@ -113,7 +113,7 @@ function loginApi({ staff = { id: 12, active: true, password_hash: 'h', password
   const api = loadTs('app/api/support/auth/login/route.ts', {
     '@/app/passwords': { hashPassword: async () => { calls.push(['hash']); }, verifyPassword: async () => valid },
     '@/lib/security/rate-limit': { consumeLimit: async (scope) => { calls.push(['consume', scope]); }, refundLimit: async (scope) => { calls.push(['refund', scope]); } },
-    '@/lib/support/staff': { startSupportSession: async (id) => { calls.push(['session', id]); } },
+    '@/lib/support/staff': { SUPPORT_LOGIN_LIMITS: [{ scope: 'support-login-account', limit: 5, seconds: 900, message: 'x' }, { scope: 'support-login-account-day', limit: 10, seconds: 86400, message: 'x' }], startSupportSession: async (id) => { calls.push(['session', id]); } },
     '@/lib/supabase-admin': { dbError() {}, getSupabaseAdmin: () => ({ from: (table) => ({
       select() { return this; }, eq(column, value) { calls.push(['lookup', table, value]); return this; }, maybeSingle: async () => ({ data: staff, error: null }) }) }) },
   });

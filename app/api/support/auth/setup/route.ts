@@ -1,7 +1,7 @@
 import { hashPassword, hashToken } from "@/app/passwords";
 import { HttpError, readJson, secureMutation } from "@/lib/security/http";
-import { consumeLimit } from "@/lib/security/rate-limit";
-import { SUPPORT_SETUP_TOKEN, startSupportSession } from "@/lib/support/staff";
+import { clearLimit, consumeLimit } from "@/lib/security/rate-limit";
+import { SUPPORT_LOGIN_LIMITS, SUPPORT_SETUP_TOKEN, startSupportSession } from "@/lib/support/staff";
 import { supportAudit } from "@/lib/support/audit";
 import { dbError, getSupabaseAdmin } from "@/lib/supabase-admin";
 
@@ -19,6 +19,11 @@ async function setup(request: Request) {
   dbError(result.error, "Use support setup link");
   if (result.data == null) throw new HttpError(400, "Este link venceu ou já foi usado. Peça um novo à equipe da plataforma.");
   const staffId = Number(result.data);
+  // Quem recebeu um link novo não precisa esperar o bloqueio por senha errada acabar.
+  const owner = await getSupabaseAdmin().from("support_staff").select("email").eq("id", staffId).maybeSingle();
+  dbError(owner.error, "Read support account");
+  const email = owner.data?.email ? String(owner.data.email) : "";
+  if (email) await Promise.all(SUPPORT_LOGIN_LIMITS.map(({ scope }) => clearLimit(scope, email)));
   await supportAudit(staffId, "password_set");
   await startSupportSession(staffId);
   return Response.json({ ok: true, next: "/suporte/verificar" });

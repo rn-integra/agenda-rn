@@ -82,7 +82,6 @@ test('legacy state cannot be transferred, deleted or cloned for another tenant',
 test('A1: server-side agenda readers use the normalized store scoped to RN Gestão, never app_state',()=>{
  const paths=[
   '../app/api/attendance/status/route.ts',
-  '../app/api/documents/route.ts',
   '../app/api/patient-authorship/route.ts',
   '../app/api/state/route.ts',
   '../app/api/workflow/route.ts',

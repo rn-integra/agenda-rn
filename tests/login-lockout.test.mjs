@@ -69,13 +69,13 @@ test('login: reserva a tentativa antes de conferir a senha e só devolve quando 
   const wrong = loginApi({ passwordOk: false });
   assert.equal((await wrong.post()).status, 401);
   const reserved = wrong.calls.filter((c) => c[0] === 'consume').map((c) => c[1]);
-  assert.deepEqual(reserved, ['login-failures-global', 'login-account', 'login-account-day']);
+  assert.deepEqual(reserved, ['login-account', 'login-account-day']);
   assert.ok(wrong.calls.filter((c) => c[0] === 'consume' && c[1].startsWith('login-account')).every((c) => c[2] === 'secretaria@clinica.test'));
   assert.equal(wrong.calls.filter((c) => c[0] === 'refund').length, 0, 'senha errada não é devolvida');
 
   const right = loginApi({ passwordOk: true });
   assert.equal((await right.post()).status, 200);
-  assert.deepEqual(right.calls.filter((c) => c[0] === 'refund').map((c) => c[1]).sort(), ['login-account', 'login-account-day', 'login-failures-global']);
+  assert.deepEqual(right.calls.filter((c) => c[0] === 'refund').map((c) => c[1]).sort(), ['login-account', 'login-account-day']);
   const firstRefund = right.calls.findIndex((c) => c[0] === 'refund'), lastConsume = right.calls.map((c) => c[0]).lastIndexOf('consume');
   assert.ok(lastConsume < firstRefund, 'a reserva acontece antes da devolução');
 });
@@ -84,7 +84,7 @@ test('login: limites por conta de 10 erros em 15 min e 20 em 24 h, e redefinir a
   const { LOGIN_FAILURE_LIMITS } = loadTs('lib/security/rate-limit.ts', { '@/lib/supabase-admin': { getSupabaseAdmin: () => ({}) } });
   assert.equal(JSON.stringify(LOGIN_FAILURE_LIMITS.map((l) => [l.scope, l.limit, l.seconds])), JSON.stringify([['login-account', 10, 900], ['login-account-day', 20, 86400]]));
   const login = read('app/api/auth/login/route.ts');
-  assert.match(login, /consumeLimit\("login-failures-global", "all", 600, 60\)/);
+  assert.doesNotMatch(login, /login-failures-global/, 'sem limite geral: um ataque distribuído travaria o login de todos');
   assert.doesNotMatch(login, /login-global"/, 'o limite geral antigo contava também os logins certos');
   const reset = read('app/api/auth/reset/route.ts');
   assert.match(reset, /LOGIN_FAILURE_LIMITS\.map\(\(\{ scope \}\) => clearLimit\(scope, email\)\)/);

@@ -43,7 +43,10 @@ async function putState(request: Request) {
   if(unavailable.length)return Response.json({error:"Horário indisponível: "+unavailable[0].problem},{status:409});
   if (session.account.role === "doctor") {
     const minutes = (v: unknown) => String(v).split(":").reduce((h,m)=>h*60+Number(m),0);
-    for (const b of proposed.scheduleBlocks || []) if ((current.appointments || []).some((a: Record<string, unknown>) => (a.doctorId === b.professionalId || a.anesthetistId === b.professionalId) && a.date === b.date && a.status !== "cancelled" && minutes(b.start) < minutes(a.time) + Number(a.duration || 0) && minutes(b.end) > minutes(a.time))) return Response.json({ error: "Existe atendimento no horário do bloqueio" }, { status: 409 });
+    // Só bloqueios novos ou alterados: um bloqueio antigo sobre um atendimento (criado pela gerência) não trava o resto.
+    const knownBlocks = new Map((current.scheduleBlocks as Record<string, unknown>[] | undefined || []).map((b) => [String(b.id), canonical("scheduleBlocks", b)]));
+    const changedBlocks = (proposed.scheduleBlocks || []).filter((b: Record<string, unknown>) => knownBlocks.get(String(b.id)) !== canonical("scheduleBlocks", b));
+    for (const b of changedBlocks) if ((current.appointments || []).some((a: Record<string, unknown>) => (a.doctorId === b.professionalId || a.anesthetistId === b.professionalId) && a.date === b.date && a.status !== "cancelled" && minutes(b.start) < minutes(a.time) + Number(a.duration || 0) && minutes(b.end) > minutes(a.time))) return Response.json({ error: "Existe atendimento no horário do bloqueio" }, { status: 409 });
   }
   const entries: Array<Record<string, unknown>> = [];
   {

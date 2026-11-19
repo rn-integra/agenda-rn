@@ -15,6 +15,11 @@ export const SUPPORT_SETUP_TOKEN = /^[0-9a-f]{64}$/;
 // A sessão do console e a confirmação do código valem por 12 h; depois, entra de novo.
 export const SUPPORT_SESSION_HOURS = 12;
 export const SUPPORT_MFA_HOURS = 12;
+// Senha errada no login do console (por e-mail). O link novo de acesso (support_staff_invite) zera os dois.
+export const SUPPORT_LOGIN_LIMITS = [
+  { scope: "support-login-account", limit: 5, seconds: 900, message: "Muitas tentativas com senha errada. Aguarde 15 minutos." },
+  { scope: "support-login-account-day", limit: 10, seconds: 86400, message: "Muitas tentativas com senha errada. A conta fica bloqueada por até 24 horas; para entrar antes, peça um novo link de acesso à equipe da plataforma." },
+] as const;
 
 export type SupportStaff = { id: number; email: string; name: string };
 export type SupportContext = {

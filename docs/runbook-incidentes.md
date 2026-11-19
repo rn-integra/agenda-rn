@@ -102,6 +102,10 @@ select public.support_staff_invite('pessoa@rnassessoria.com.br', 'Nome da Pessoa
 select public.support_staff_invite('pessoa@rnassessoria.com.br');
 -- Perdeu o celular ou a chave SUPABASE_SECRET_KEY foi trocada: link novo e autenticador zerado
 select public.support_staff_invite('pessoa@rnassessoria.com.br', null, true);
+-- Conta do suporte bloqueada por senha errada (5 em 15 min ou 10 no dia): o mesmo comando gera um link
+-- novo; ao criar a senha por ele, o bloqueio sai na hora.
+-- Conta de clínica bloqueada (10 erros em 15 min ou 20 no dia): no console, ficha da organização → equipe →
+-- "Desbloquear login". "Esqueci minha senha" também libera, mas só com o envio de e-mail configurado.
 -- Tirar alguém da equipe (o acesso some na hora, inclusive sessões assistidas)
 update public.support_staff set active = false where email = 'pessoa@rnassessoria.com.br';
 delete from public.support_sessions where staff_id = (select id from public.support_staff where email = 'pessoa@rnassessoria.com.br');
