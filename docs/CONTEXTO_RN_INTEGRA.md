@@ -280,7 +280,7 @@ As versões diferem porque o banco registra o momento da aplicação; ao compara
 - Zerar o banco antes do lançamento exige remover e recolocar a trava do `support_audit` por migração.
 - Os testes que reaplicam as migrações do suporte partem de `tests/before-support.mjs`.
 
-**Pendente:** o responsável cria a própria conta do suporte em produção pelo SQL Editor (runbook, seção 5).
+**Conta do responsável:** criada em produção, com senha e 2FA (19/11/2026).
 
 ## 7. Log de continuidade
 
